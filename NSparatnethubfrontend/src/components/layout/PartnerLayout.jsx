@@ -10,6 +10,7 @@ const PartnerLayout = () => {
         { label: 'My Events', path: '/partner/events', icon: '📅' },
         { label: 'Create Event', path: '/partner/create', icon: '➕' },
         { label: 'Earnings', path: '/partner/earnings', icon: '💰' },
+        { label: 'Marketing', path: '/partner/marketing', icon: '🚀' },
     ];
 
     return (

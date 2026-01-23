@@ -14,8 +14,10 @@ import PartnerSettings from './pages/partner/PartnerSettings';
 import HelpCenter from './pages/partner/HelpCenter';
 import WebScanner from './pages/partner/tools/WebScanner';
 import PartnerChat from './pages/partner/PartnerChat';
+import MarketingCenter from './pages/partner/MarketingCenter';
 import PartnerTicket from './pages/partner/PartnerTicket';
 import ForgotPassword from './pages/partner/ForgotPassword';
+import PaymentGateway from './pages/partner/PaymentGateway';
 
 function App() {
   return (
@@ -25,6 +27,7 @@ function App() {
         <Route path="/" element={<PartnerLanding />} />
         <Route path="/become-partner" element={<PartnerLanding />} />
         <Route path="/partner/login" element={<PartnerLogin />} />
+        <Route path="/partner/payment" element={<PaymentGateway />} />
         <Route path="/partner/forgot-password" element={<ForgotPassword />} />
         <Route path="/partner/register" element={<PartnerRegistration />} />
         <Route path="/partner/help" element={<HelpCenter />} />
@@ -43,6 +46,7 @@ function App() {
           <Route path="/partner/edit/:id" element={<CreateEvent />} />
           <Route path="/partner/create" element={<CreateEvent />} />
           <Route path="/partner/earnings" element={<Earnings />} />
+          <Route path="/partner/marketing" element={<MarketingCenter />} />
           <Route path="/partner/settings" element={<PartnerSettings />} />
         </Route>
       </Routes>
