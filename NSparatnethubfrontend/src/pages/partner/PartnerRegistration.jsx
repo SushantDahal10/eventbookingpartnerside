@@ -68,8 +68,8 @@ const PartnerRegistration = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        alert("Registration Successful! Welcome to PartnerHub.");
-        navigate('/partner/dashboard');
+        alert("Registration Submitted Successfully!\n\nIMPORTANT: Your account is now under review. This process typically takes 24 hours.\n\nYou will receive an email once your partner account is verified and activated. You will not be able to access the dashboard until then.");
+        navigate('/partner/login');
     };
 
     // UI Helper Components

@@ -32,8 +32,8 @@ const PartnerLayout = () => {
                             key={item.path}
                             to={item.path}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive(item.path)
-                                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                                 }`}
                         >
                             <span>{item.icon}</span>
@@ -42,24 +42,29 @@ const PartnerLayout = () => {
                     ))}
 
                     <div className="pt-8">
-                        <p className="px-3 text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Support</p>
-                        <Link to="#" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white transition-colors">
+                        <p className="px-3 text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Support & Settings</p>
+                        <Link to="/partner/help" className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive('/partner/help') ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}>
                             <span>💬</span> Help Center
                         </Link>
-                        <Link to="/" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-white transition-colors">
-                            <span>🏠</span> Back to Home
+                        <Link to="/partner/settings" className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive('/partner/settings') ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}>
+                            <span>⚙️</span> Settings
                         </Link>
                     </div>
                 </div>
 
                 {/* User User */}
                 <div className="p-4 border-t border-gray-800 bg-[#0B111D]">
-                    <div className="flex items-center gap-3">
-                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=100" className="w-9 h-9 rounded-lg border border-gray-600" alt="Profile" />
-                        <div className="overflow-hidden">
-                            <p className="text-sm font-bold truncate">Acme Events</p>
-                            <p className="text-xs text-gray-500 truncate">Pro Organizer</p>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=100" className="w-9 h-9 rounded-lg border border-gray-600" alt="Profile" />
+                            <div className="overflow-hidden">
+                                <p className="text-sm font-bold truncate">Acme Events</p>
+                                <p className="text-xs text-gray-500 truncate">Pro Organizer</p>
+                            </div>
                         </div>
+                        <Link to="/partner/login" className="text-gray-500 hover:text-red-500 transition-colors" title="Logout">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                        </Link>
                     </div>
                 </div>
             </aside>

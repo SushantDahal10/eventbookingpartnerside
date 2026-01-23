@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const CreateEvent = () => {
     const navigate = useNavigate();
+    const { id } = useParams();
     const [activeSection, setActiveSection] = useState('details');
 
     const [eventData, setEventData] = useState({
@@ -19,6 +20,29 @@ const CreateEvent = () => {
             { name: 'General Admission', price: 1000, quantity: 100 }
         ]
     });
+
+    useEffect(() => {
+        // Mock Fetch for Edit Mode
+        if (id) {
+            // Simulate API call
+            console.log("Fetching data for event ID:", id);
+            setEventData({
+                title: 'Summer Music Festival 2026',
+                category: 'Music',
+                date: '2026-06-15',
+                time: '18:00',
+                venue: 'LOD Club',
+                address: 'Thamel, Kathmandu',
+                description: 'The biggest summer festival is back!',
+                ticketTypes: [
+                    { name: 'Early Bird', price: 1500, quantity: 50 },
+                    { name: 'VIP', price: 5000, quantity: 20 }
+                ],
+                thumbnail: null, // Would be a URL in real app
+                gallery: []
+            });
+        }
+    }, [id]);
 
     const [files, setFiles] = useState({
         thumbnailPreview: null,
@@ -103,8 +127,8 @@ const CreateEvent = () => {
                                 key={item.id}
                                 onClick={() => scrollToSection(item.id)}
                                 className={`w-full text-left px-4 py-3 rounded-lg font-bold text-sm flex items-center gap-3 transition-all ${activeSection === item.id
-                                        ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
-                                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                                    ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                                     }`}
                             >
                                 <span>{item.icon}</span>
