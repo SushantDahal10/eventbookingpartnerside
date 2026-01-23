@@ -234,7 +234,7 @@ const PartnerRegistration = () => {
                                                 <Label>Bank Name</Label>
                                                 <Input name="bankName" placeholder="e.g. Nabil Bank" value={formData.bankName} onChange={handleChange} autoFocus />
                                             </div>
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <Label>Branch</Label>
                                                     <Input name="branch" placeholder="e.g. Teku" value={formData.branch} onChange={handleChange} />
@@ -267,7 +267,7 @@ const PartnerRegistration = () => {
                                                 </div>
                                                 <div className="space-y-4 mt-2">
                                                     <Input name="primaryName" placeholder="Full Name" value={formData.primaryName} onChange={handleChange} />
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <Input name="primaryPhone" placeholder="Mobile Number" value={formData.primaryPhone} onChange={handleChange} />
                                                         <Input name="primaryEmail" placeholder="Email Address" value={formData.primaryEmail} onChange={handleChange} />
                                                     </div>
@@ -281,7 +281,7 @@ const PartnerRegistration = () => {
                                                 </div>
                                                 <div className="space-y-4 mt-2">
                                                     <Input name="backupName" placeholder="Full Name" value={formData.backupName} onChange={handleChange} />
-                                                    <div className="grid grid-cols-2 gap-4">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         <Input name="backupPhone" placeholder="Mobile Number" value={formData.backupPhone} onChange={handleChange} />
                                                         <Input name="backupEmail" placeholder="Email Address" value={formData.backupEmail} onChange={handleChange} />
                                                     </div>

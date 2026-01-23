@@ -103,8 +103,8 @@ const PartnerSettings = () => {
             <div className="flex flex-col md:flex-row gap-8">
 
                 {/* Sidebar Tabs */}
-                <div className="md:w-64 flex-shrink-0">
-                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="md:w-64 flex-shrink-0 w-full">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-row md:flex-col overflow-x-auto no-scrollbar md:overflow-visible">
                         {[
                             { id: 'profile', label: 'Company Profile', icon: '🏢' },
                             { id: 'security', label: 'Login & Security', icon: '🔒' },
@@ -113,7 +113,7 @@ const PartnerSettings = () => {
                             <button
                                 key={item.id}
                                 onClick={() => setActiveTab(item.id)}
-                                className={`w-full text-left px-5 py-4 font-bold text-sm flex items-center gap-3 transition-colors ${activeTab === item.id ? 'bg-slate-50 text-slate-900 border-l-4 border-primary' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
+                                className={`w-auto md:w-full text-left px-5 py-4 font-bold text-sm flex items-center gap-3 transition-colors shrink-0 whitespace-nowrap ${activeTab === item.id ? 'bg-slate-50 text-slate-900 border-b-4 md:border-b-0 md:border-l-4 border-primary' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'}`}
                             >
                                 <span className="text-lg">{item.icon}</span>
                                 {item.label}

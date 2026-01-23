@@ -51,16 +51,16 @@ const MarketingCenter = () => {
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex gap-6 border-b border-slate-200 mb-8">
+            <div className="flex gap-6 border-b border-slate-200 mb-8 overflow-x-auto no-scrollbar">
                 <button
                     onClick={() => setActiveTab('boost')}
-                    className={`pb-4 px-2 font-bold text-sm transition-all ${activeTab === 'boost' ? 'text-primary border-b-4 border-primary' : 'text-slate-400 hover:text-slate-700'}`}
+                    className={`pb-4 px-2 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'boost' ? 'text-primary border-b-4 border-primary' : 'text-slate-400 hover:text-slate-700'}`}
                 >
                     🚀 Boost Events
                 </button>
                 <button
                     onClick={() => setActiveTab('insights')}
-                    className={`pb-4 px-2 font-bold text-sm transition-all ${activeTab === 'insights' ? 'text-primary border-b-4 border-primary' : 'text-slate-400 hover:text-slate-700'}`}
+                    className={`pb-4 px-2 font-bold text-sm transition-all whitespace-nowrap ${activeTab === 'insights' ? 'text-primary border-b-4 border-primary' : 'text-slate-400 hover:text-slate-700'}`}
                 >
                     📈 Market Insights
                 </button>

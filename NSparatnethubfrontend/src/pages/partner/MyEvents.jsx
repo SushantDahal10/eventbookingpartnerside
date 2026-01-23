@@ -149,7 +149,7 @@ const MyEvents = () => {
                                     </div>
 
                                     {/* Middle Row: Key Stats Grid */}
-                                    <div className="grid grid-cols-3 gap-6 mb-6">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mb-6">
                                         {/* Sales Progress */}
                                         <div className="col-span-1">
                                             <div className="flex justify-between text-xs font-bold uppercase text-slate-400 mb-2">
