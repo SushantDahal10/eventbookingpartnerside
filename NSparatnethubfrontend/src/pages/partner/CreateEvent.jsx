@@ -77,6 +77,13 @@ const CreateEvent = () => {
 
     const handleGalleryChange = (e) => {
         const newFiles = Array.from(e.target.files);
+        const currentCount = eventData.gallery.length;
+
+        if (currentCount + newFiles.length > 3) {
+            alert("You can only upload a maximum of 3 gallery images.");
+            return;
+        }
+
         const newPreviews = newFiles.map(file => URL.createObjectURL(file));
 
         setEventData({ ...eventData, gallery: [...eventData.gallery, ...newFiles] });
@@ -91,10 +98,66 @@ const CreateEvent = () => {
         setFiles({ ...files, galleryPreviews: newPreviews });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert("Event Published!");
-        navigate('/partner/dashboard');
+
+        // Basic Validation
+        if (!eventData.title || !eventData.date || !eventData.thumbnail) {
+            alert('Please fill in all required fields and upload a cover image.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('title', eventData.title);
+        formData.append('category', eventData.category); // Send Category
+        formData.append('description', eventData.description);
+        const fullDate = eventData.time ? `${eventData.date}T${eventData.time}:00` : `${eventData.date}T00:00:00`;
+        formData.append('date', fullDate); // Send full timestamp
+
+        formData.append('location', eventData.venue + ', ' + eventData.address);
+
+        // Tiers
+        formData.append('tiers', JSON.stringify(eventData.ticketTypes));
+
+        // Files
+        if (eventData.thumbnail) {
+            formData.append('coverImage', eventData.thumbnail);
+        }
+
+        if (eventData.gallery && eventData.gallery.length > 0) {
+            eventData.gallery.forEach(file => {
+                formData.append('galleryImages', file);
+            });
+        }
+
+        try {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                alert("You are not logged in. Please log in again.");
+                navigate('/partner/login');
+                return;
+            }
+
+            const response = await fetch('http://localhost:5000/api/events/create', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Event Created Successfully!');
+                navigate('/partner/dashboard');
+            } else {
+                alert(data.error || 'Failed to create event');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error creating event.');
+        }
     };
 
     const scrollToSection = (id) => {
@@ -140,7 +203,10 @@ const CreateEvent = () => {
                     <div className="mt-8 pt-8 border-t border-slate-100">
                         <div className="px-2 mb-4">
                             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Capacity</p>
-                            <p className="text-3xl font-black text-slate-900">{eventData.ticketTypes.reduce((acc, curr) => acc + parseInt(curr.quantity || 0), 0)}</p>
+                            <p className="text-3xl font-black text-slate-900 mb-4">{eventData.ticketTypes.reduce((acc, curr) => acc + parseInt(curr.quantity || 0), 0)}</p>
+
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Potential Revenue</p>
+                            <p className="text-xl font-black text-green-600">Rs. {eventData.ticketTypes.reduce((acc, curr) => acc + (parseInt(curr.price || 0) * parseInt(curr.quantity || 0)), 0).toLocaleString()}</p>
                         </div>
                         <button onClick={handleSubmit} className="w-full py-4 bg-primary text-white font-bold rounded-lg shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all transform hover:-translate-y-1">
                             Publish Event
@@ -175,9 +241,20 @@ const CreateEvent = () => {
                                     onChange={(e) => setEventData({ ...eventData, category: e.target.value })}
                                 >
                                     <option>Music & Concerts</option>
-                                    <option>Nightlife</option>
-                                    <option>Comedy</option>
-                                    <option>Business</option>
+                                    <option>Nightlife & Parties</option>
+                                    <option>Comedy & Shows</option>
+                                    <option>Business & Networking</option>
+                                    <option>Food & Drink</option>
+                                    <option>Arts & Culture</option>
+                                    <option>Sports & Fitness</option>
+                                    <option>Workshops & Classes</option>
+                                    <option>Family & Kids</option>
+                                    <option>Charity & Causes</option>
+                                    <option>Holiday & Seasonal</option>
+                                    <option>Fashion & Beauty</option>
+                                    <option>Film & Media</option>
+                                    <option>Travel & Outdoor</option>
+                                    <option>Other</option>
                                 </select>
                             </div>
                             <div>
@@ -292,6 +369,10 @@ const CreateEvent = () => {
                                     <div>
                                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Quantity</label>
                                         <input type="number" className="w-full px-4 py-3 rounded-lg bg-white border-2 border-slate-200 focus:border-blue-500 font-bold outline-none" value={ticket.quantity} onChange={(e) => handleTicketChange(i, 'quantity', e.target.value)} />
+                                    </div>
+                                    <div className="md:col-span-3 pt-4 border-t border-slate-200 mt-2 flex justify-between items-center">
+                                        <p className="text-sm font-bold text-slate-500 uppercase">Estimated Revenue from this Tier</p>
+                                        <p className="text-xl font-black text-green-600">Rs. {(parseInt(ticket.price || 0) * parseInt(ticket.quantity || 0)).toLocaleString()}</p>
                                     </div>
                                 </div>
                             </div>

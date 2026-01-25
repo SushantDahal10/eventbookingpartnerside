@@ -17,7 +17,10 @@ app.get('/', (req, res) => {
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
+const eventRoutes = require('./routes/eventRoutes');
+
 app.use('/api/auth', authRoutes);
+app.use('/api/events', eventRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

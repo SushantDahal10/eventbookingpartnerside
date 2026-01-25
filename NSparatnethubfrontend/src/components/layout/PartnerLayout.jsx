@@ -35,7 +35,7 @@ const PartnerLayout = () => {
             )}
 
             {/* Sidebar */}
-            <aside className={`w-64 bg-[#111827] text-white fixed top-0 bottom-0 left-0 z-30 flex flex-col border-r border-gray-800 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:static`}>
+            <aside className={`w-64 bg-[#111827] text-white fixed top-0 bottom-0 left-0 z-30 flex flex-col border-r border-gray-800 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:sticky md:top-0 md:h-screen`}>
                 {/* Brand */}
                 <div className="h-16 flex items-center px-6 border-b border-gray-800 justify-between">
                     <Link to="/partner/dashboard" className="flex items-center gap-2 font-heading font-black text-xl tracking-tight">

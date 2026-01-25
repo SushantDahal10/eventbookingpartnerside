@@ -23,9 +23,9 @@ const PartnerLogin = () => {
                     return;
                 }
 
-                // Cookie is set by backend.
                 // Store minimal user info if needed
                 localStorage.setItem('partner_user', JSON.stringify(data.user));
+                localStorage.setItem('auth_token', data.token);
                 navigate('/partner/dashboard');
             } else {
                 alert(data.message || data.error || 'Login failed');
