@@ -7,29 +7,83 @@ const ForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [password, setPassword] = useState({ new: '', confirm: '' });
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleEmailSubmit = (e) => {
+    const handleEmailSubmit = async (e) => {
         e.preventDefault();
-        // Mock API call
-        if (email) {
-            setStep(2);
+        setIsLoading(true);
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            if (response.ok) {
+                setStep(2);
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to send code');
+            }
+        } catch (error) {
+            alert('Something went wrong. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleOtpSubmit = (e) => {
+    const handleOtpSubmit = async (e) => {
         e.preventDefault();
-        // Mock Verification
-        setStep(3);
+        setIsLoading(true);
+        try {
+            const code = otp.join('');
+            const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp: code, type: 'recovery' }) // type='recovery' ensures backend handles it as PW reset
+            });
+
+            if (response.ok) {
+                // Backend returns session and sets cookie
+                setStep(3);
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Invalid Code');
+            }
+        } catch (error) {
+            alert('Verification failed.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handlePasswordReset = (e) => {
+    const handlePasswordReset = async (e) => {
         e.preventDefault();
         if (password.new !== password.confirm) {
             alert("Passwords do not match");
             return;
         }
-        alert("Password reset successfully! Login with new credentials.");
-        navigate('/partner/login');
+
+        setIsLoading(true);
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/update-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: password.new })
+            });
+
+            if (response.ok) {
+                alert("Password reset successfully! Login with new credentials.");
+                navigate('/partner/login');
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Update failed');
+            }
+        } catch (error) {
+            alert('Failed to update password.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -64,8 +118,8 @@ const ForgotPassword = () => {
                                     required
                                 />
                             </div>
-                            <button className="w-full py-4 bg-primary text-white font-black rounded-xl text-lg shadow-lg hover:bg-primary-dark transition-all">
-                                Send Code
+                            <button disabled={isLoading} className="w-full py-4 bg-primary text-white font-black rounded-xl text-lg shadow-lg hover:bg-primary-dark transition-all disabled:opacity-50">
+                                {isLoading ? 'Sending...' : 'Send Code'}
                             </button>
                             <div className="text-center">
                                 <Link to="/partner/login" className="text-sm font-bold text-slate-500 hover:text-slate-900">Back to Login</Link>
@@ -92,8 +146,8 @@ const ForgotPassword = () => {
                                     />
                                 ))}
                             </div>
-                            <button className="w-full py-4 bg-primary text-white font-black rounded-xl text-lg shadow-lg hover:bg-primary-dark transition-all">
-                                Verify Code
+                            <button disabled={isLoading} className="w-full py-4 bg-primary text-white font-black rounded-xl text-lg shadow-lg hover:bg-primary-dark transition-all disabled:opacity-50">
+                                {isLoading ? 'Verifying...' : 'Verify Code'}
                             </button>
                             <div className="text-center">
                                 <button type="button" onClick={() => setStep(1)} className="text-sm font-bold text-slate-500 hover:text-slate-900">Wrong Email?</button>
@@ -124,8 +178,8 @@ const ForgotPassword = () => {
                                     required
                                 />
                             </div>
-                            <button className="w-full py-4 bg-slate-900 text-white font-black rounded-xl text-lg shadow-lg hover:bg-slate-800 transition-all">
-                                Reset Password
+                            <button disabled={isLoading} className="w-full py-4 bg-slate-900 text-white font-black rounded-xl text-lg shadow-lg hover:bg-slate-800 transition-all disabled:opacity-50">
+                                {isLoading ? 'Updating...' : 'Reset Password'}
                             </button>
                         </form>
                     )}

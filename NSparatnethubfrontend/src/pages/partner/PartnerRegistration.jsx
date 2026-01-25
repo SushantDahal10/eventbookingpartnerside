@@ -4,6 +4,9 @@ import { useNavigate } from 'react-router-dom';
 const PartnerRegistration = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
+    const [isLoading, setIsLoading] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [toast, setToast] = useState({ show: false, message: '', type: 'error' }); // 'error' or 'success'
 
     // Form State
     const [formData, setFormData] = useState({
@@ -24,15 +27,10 @@ const PartnerRegistration = () => {
         accountNumber: '',
         branch: '',
         // Step 5: Contact
-        primaryName: '',
-        primaryPhone: '',
-        primaryEmail: '',
         backupName: '',
         backupPhone: '',
         backupEmail: '',
-        // Step 6: Auth
-        password: '',
-        confirmPassword: '',
+        // Step 6: Agreement
         agreed: false
     });
 
@@ -40,6 +38,55 @@ const PartnerRegistration = () => {
         panPreview: null,
         vatPreview: null
     });
+
+    // Check for Resubmission Token
+    const [resubmitToken, setResubmitToken] = useState(null);
+
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+        if (token) {
+            setResubmitToken(token);
+            fetchApplicationData(token);
+        }
+    }, []);
+
+    const fetchApplicationData = async (token) => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/auth/application-data?token=${token}`);
+            const data = await res.json();
+            if (res.ok) {
+                setFormData({
+                    orgName: data.organization_name || '',
+                    email: data.official_email || '',
+                    phone: data.official_phone || '',
+                    panName: data.pan_holder_name || '',
+                    panNumber: data.pan_number || '',
+                    panPhoto: null, // User must re-upload or we assume previous? Usually re-upload on update or show placeholder
+                    vatNumber: data.vat_number || '',
+                    vatPhoto: null,
+                    bankName: data.bank_name || '',
+                    accountName: data.account_holder_name || '',
+                    accountNumber: data.account_number || '',
+                    branch: data.bank_branch || '',
+                    backupName: data.backup_contact_name || '',
+                    backupPhone: data.backup_contact_phone || '',
+                    backupEmail: data.backup_contact_email || '',
+                    agreed: false
+                });
+
+                // Show previews if URLs exist
+                if (data.pan_photo_url) setFiles(prev => ({ ...prev, panPreview: data.pan_photo_url }));
+                if (data.vat_photo_url) setFiles(prev => ({ ...prev, vatPreview: data.vat_photo_url }));
+
+                setToast({ show: true, message: 'Existing application loaded. Please update details and resubmit.', type: 'error' }); // Use error style for visibility or add info style
+            } else {
+                setToast({ show: true, message: data.error || 'Failed to load application.', type: 'error' });
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -57,7 +104,63 @@ const PartnerRegistration = () => {
         }
     };
 
+    const validateStep = (currentStep) => {
+        const { orgName, email, phone, panName, panNumber, vatNumber, bankName, accountName, accountNumber, branch, backupName, backupPhone, backupEmail, agreed } = formData;
+
+        switch (currentStep) {
+            case 1: // Organization
+                if (!orgName || !email || !phone) return "Please fill in all Organization Details.";
+                return null;
+            case 2: // PAN
+                if (!panName || !panNumber || !formData.panPhoto) return "Please fill in all PAN Details and upload the document.";
+                return null;
+            case 3: // VAT
+                if (!vatNumber || !formData.vatPhoto) return "Please fill in VAT Number and upload the certificate.";
+                return null;
+            case 4: // Bank
+                if (!bankName || !accountName || !accountNumber || !branch) return "Please fill in all Banking Details.";
+                return null;
+            case 5: // Contact
+                if (!backupName || !backupPhone || !backupEmail) return "Please key contact person details.";
+                return null;
+            case 6: // Agreement
+                if (!agreed) return "Please agree to the terms to proceed.";
+                return null;
+            default:
+                return null;
+        }
+    };
+
+    const handleStepClick = (targetStep) => {
+        // Allow going back
+        if (targetStep < step) {
+            window.scrollTo(0, 0);
+            setStep(targetStep);
+            return;
+        }
+
+        // Validation loop to go forward
+        // Check all steps from current up to target-1
+        let current = step;
+        while (current < targetStep) {
+            const error = validateStep(current);
+            if (error) {
+                setToast({ show: true, message: error + ` (Step ${current})`, type: 'error' });
+                return;
+            }
+            current++;
+        }
+
+        window.scrollTo(0, 0);
+        setStep(targetStep);
+    };
+
     const nextStep = () => {
+        const error = validateStep(step);
+        if (error) {
+            setToast({ show: true, message: error, type: 'error' });
+            return;
+        }
         window.scrollTo(0, 0);
         setStep(step + 1);
     };
@@ -66,46 +169,61 @@ const PartnerRegistration = () => {
         setStep(step - 1);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        alert("Registration Submitted Successfully!\n\nIMPORTANT: Your account is now under review. This process typically takes 24 hours.\n\nYou will receive an email once your partner account is verified and activated. You will not be able to access the dashboard until then.");
-        navigate('/partner/login');
+
+        // Final Agreement Check (just in case)
+        if (!formData.agreed) {
+            setToast({ show: true, message: "Use must agree to the terms and conditions to register.", type: 'error' });
+            return;
+        }
+
+        setIsLoading(true);
+        // Prepare FormData for file uploads
+        const submitData = new FormData();
+        Object.keys(formData).forEach(key => submitData.append(key, formData[key]));
+
+        try {
+            const endpoint = resubmitToken
+                ? 'http://localhost:5000/api/auth/resubmit'
+                : 'http://localhost:5000/api/auth/register';
+
+            if (resubmitToken) {
+                submitData.append('token', resubmitToken);
+            }
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                body: submitData,
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                setShowSuccessModal(true);
+            } else {
+                setToast({ show: true, message: data.error || 'Registration failed', type: 'error' });
+            }
+        } catch (error) {
+            console.error(error);
+            setToast({ show: true, message: 'Something went wrong. Please try again.', type: 'error' });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    // UI Helper Components
-    const Label = ({ children }) => <label className="block text-sm font-bold text-gray-700 mb-2">{children}</label>;
-    const Input = (props) => (
-        <input
-            {...props}
-            className="w-full px-4 py-3.5 rounded-xl bg-white border-2 border-gray-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400"
-        />
-    );
-    const FileUpload = ({ label, preview, onChange }) => (
-        <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer hover:bg-blue-50/50 hover:border-blue-400 transition-all group bg-white">
-            <label className="cursor-pointer block w-full">
-                {!preview ? (
-                    <>
-                        <div className="w-12 h-12 bg-blue-100/50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                            <span className="text-xl">📄</span>
-                        </div>
-                        <span className="text-sm font-bold text-gray-600 group-hover:text-primary block">{label}</span>
-                        <span className="text-xs text-gray-400 mt-1 block">Click to upload document</span>
-                    </>
-                ) : (
-                    <div className="relative">
-                        <img src={preview} alt="Preview" className="h-40 mx-auto rounded-lg object-contain shadow-sm" />
-                        <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                            <span className="bg-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">Change</span>
-                        </div>
-                    </div>
-                )}
-                <input type="file" className="hidden" accept="image/*" onChange={onChange} />
-            </label>
-        </div>
-    );
-
     return (
-        <div className="min-h-screen bg-[#F8FAFC] font-body flex items-center justify-center p-4 lg:p-8">
+        <div className="min-h-screen bg-[#F8FAFC] font-body flex items-center justify-center p-4 lg:p-8 relative">
+            {/* Toast Notification */}
+            {toast.show && (
+                <div className={`fixed top-6 right-6 z-[60] px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-[slideIn_0.3s] ${toast.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-600 border border-green-100'}`}>
+                    <span className="text-2xl">{toast.type === 'error' ? '⚠️' : '✅'}</span>
+                    <div>
+                        <h4 className="font-bold text-sm uppercase tracking-wider opacity-80">{toast.type === 'error' ? 'Error' : 'Success'}</h4>
+                        <p className="font-medium">{toast.message}</p>
+                    </div>
+                    <button onClick={() => setToast({ ...toast, show: false })} className="ml-4 opacity-50 hover:opacity-100">✕</button>
+                </div>
+            )}
             <div className="max-w-6xl w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[700px]">
 
                 {/* Left Side - Stepper & Info */}
@@ -130,20 +248,32 @@ const PartnerRegistration = () => {
                             { num: 5, title: "Contacts", desc: "Key people" },
                             { num: 6, title: "Agreement", desc: "Finalize" },
                         ].map((s) => (
-                            <div key={s.num} className={`flex items-center gap-4 transition-all duration-300 ${step === s.num ? 'translate-x-2' : 'opacity-50'}`}>
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border-2 ${step >= s.num ? 'bg-primary border-primary text-white' : 'border-slate-600 text-slate-400'}`}>
+                            <div
+                                key={s.num}
+                                onClick={() => handleStepClick(s.num)}
+                                className={`flex items-center gap-4 transition-all duration-300 cursor-pointer group ${step === s.num ? 'translate-x-2' : 'opacity-50 hover:opacity-100'}`}
+                            >
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold border-2 transition-colors ${step >= s.num ? 'bg-primary border-primary text-white' : 'border-slate-600 text-slate-400 group-hover:border-slate-400'
+                                    }`}>
                                     {step > s.num ? '✓' : s.num}
                                 </div>
                                 <div>
-                                    <h4 className={`font-bold ${step === s.num ? 'text-white' : 'text-slate-400'}`}>{s.title}</h4>
+                                    <h4 className={`font-bold ${step === s.num ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}>{s.title}</h4>
                                     <p className="text-xs text-slate-500">{s.desc}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    <div className="relative z-10">
-                        <p className="text-xs text-slate-500">&copy; 2026 NepaliShows Inc.</p>
+                    <div className="relative z-10 mt-auto bg-slate-800/50 p-6 rounded-xl border border-slate-700 backdrop-blur-sm">
+                        <p className="text-sm font-medium text-slate-300 mb-3">Already registered with us?</p>
+                        <a
+                            href="/partner/login"
+                            className="block w-full py-3 bg-white text-[#0F172A] text-center rounded-lg font-bold hover:bg-slate-100 transition-colors shadow-lg"
+                        >
+                            Log In Here
+                        </a>
+                        <p className="text-xs text-center text-slate-500 mt-2">&copy; 2026 NepaliShows Inc.</p>
                     </div>
                 </div>
 
@@ -172,7 +302,23 @@ const PartnerRegistration = () => {
                                             </div>
                                             <div>
                                                 <Label>Official Phone</Label>
-                                                <Input name="phone" type="tel" placeholder="98XXXXXXXX" value={formData.phone} onChange={handleChange} />
+                                                <div className="flex gap-3">
+                                                    <div className="w-24 px-3 py-3.5 rounded-xl bg-gray-50 border-2 border-gray-100 flex items-center justify-center font-bold text-gray-500 select-none">
+                                                        🇳🇵 +977
+                                                    </div>
+                                                    <Input
+                                                        name="phone"
+                                                        type="tel"
+                                                        placeholder="98XXXXXXXX"
+                                                        value={formData.phone}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value.replace(/\D/g, ''); // Numeric only
+                                                            if (val.length <= 10) {
+                                                                handleChange({ target: { name: 'phone', value: val } });
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </>
@@ -260,24 +406,10 @@ const PartnerRegistration = () => {
                                             <p className="text-gray-500">Who manages your events?</p>
                                         </div>
                                         <div className="space-y-8">
-                                            {/* Primary Contact */}
-                                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 relative">
-                                                <div className="absolute -top-3 left-6 bg-white px-3 py-1 rounded-full border border-gray-200 text-xs font-bold text-primary uppercase tracking-wider shadow-sm">
-                                                    Primary Contact
-                                                </div>
-                                                <div className="space-y-4 mt-2">
-                                                    <Input name="primaryName" placeholder="Full Name" value={formData.primaryName} onChange={handleChange} />
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                        <Input name="primaryPhone" placeholder="Mobile Number" value={formData.primaryPhone} onChange={handleChange} />
-                                                        <Input name="primaryEmail" placeholder="Email Address" value={formData.primaryEmail} onChange={handleChange} />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Backup Contact */}
+                                            {/* Contact Person */}
                                             <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 relative">
                                                 <div className="absolute -top-3 left-6 bg-white px-3 py-1 rounded-full border border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider shadow-sm">
-                                                    Backup Contact
+                                                    Contact Person
                                                 </div>
                                                 <div className="space-y-4 mt-2">
                                                     <Input name="backupName" placeholder="Full Name" value={formData.backupName} onChange={handleChange} />
@@ -307,14 +439,15 @@ const PartnerRegistration = () => {
                                                 <p className="mb-2">3. <strong>Cancellations:</strong> Partners are responsible for refunding customers in case of event cancellations. NepaliShows facilitates the process but holds no liability for organizer negligence.</p>
                                                 <p className="mb-2">4. <strong>Data Privacy:</strong> Organizer agrees to handle attendee data responsibly and in accordance with Nepal's privacy laws.</p>
                                                 <p>5. <strong>Content:</strong> You certify that you hold rights to all content (images, names) uploaded for event promotion.</p>
+                                                <p className="mt-4 p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800">
+                                                    <strong>Note:</strong> Your application will be reviewed by our team. You will receive login credentials via email <strong>only after approval</strong>.
+                                                </p>
                                             </div>
 
-                                            <div>
-                                                <Label>Create Password</Label>
-                                                <Input name="password" type="password" placeholder="••••••••" value={formData.password} onChange={handleChange} />
-                                            </div>
-
-                                            <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100/50 transition-colors cursor-pointer" onClick={() => setFormData({ ...formData, agreed: !formData.agreed })}>
+                                            <div
+                                                className="flex items-start gap-4 p-4 bg-blue-50 rounded-xl border border-blue-100 hover:bg-blue-100/50 transition-colors cursor-pointer"
+                                                onClick={() => setFormData({ ...formData, agreed: !formData.agreed })}
+                                            >
                                                 <div className={`mt-1 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-colors ${formData.agreed ? 'bg-primary border-primary text-white' : 'border-gray-300 bg-white'}`}>
                                                     {formData.agreed && '✓'}
                                                 </div>
@@ -328,11 +461,15 @@ const PartnerRegistration = () => {
                                 )}
 
                                 {/* Actions Footer */}
-                                <div className="pt-8 flex gap-4 border-t border-gray-100 mt-8">
+                                <div className="pt-8 flex gap-4 border-t border-gray-100 mt-8 relative">
+                                    {/* Overlay to prevent clicking when loading */}
+                                    {isLoading && <div className="absolute inset-0 z-50 cursor-wait bg-white/50" />}
+
                                     {step > 1 && (
                                         <button
                                             type="button"
                                             onClick={prevStep}
+                                            disabled={isLoading}
                                             className="px-8 py-4 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
                                         >
                                             Back
@@ -349,10 +486,22 @@ const PartnerRegistration = () => {
                                     ) : (
                                         <button
                                             type="submit"
-                                            className={`flex-grow px-8 py-4 rounded-xl font-bold text-white transition-all shadow-lg ${formData.agreed ? 'bg-primary hover:bg-primary-dark shadow-primary/30' : 'bg-gray-300 cursor-not-allowed'}`}
-                                            disabled={!formData.agreed}
+                                            className={`flex-grow px-8 py-4 rounded-xl font-bold text-white transition-all shadow-lg flex items-center justify-center ${formData.agreed ? 'bg-primary hover:bg-primary-dark shadow-primary/30' : 'bg-gray-300 cursor-not-allowed hidden-for-now-allowing-click-for-toast'}`}
+                                            // Note: We want the user to CLICK to see the error if not agreed, so we don't strictly disable, or we handle it visually. 
+                                            // User requested: "if not cicked and someone tried to clcik resgiets show tham that please check the box"
+                                            // So I will NOT disable the button, but I will style it as disabled if not agreed, BUT allow click to trigger validation.
+                                            // Actually, the previous code had disabled={!formData.agreed}. I will remove that so the onClick handler runs and shows the toast.
+                                            disabled={isLoading}
+                                            style={!formData.agreed ? { opacity: 0.7, cursor: 'not-allowed' } : {}}
                                         >
-                                            Complete Registration
+                                            {isLoading ? (
+                                                <span className="flex items-center gap-2">
+                                                    <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                                    Submitting...
+                                                </span>
+                                            ) : (
+                                                'Complete Registration'
+                                            )}
                                         </button>
                                     )}
                                 </div>
@@ -361,8 +510,68 @@ const PartnerRegistration = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Success Modal */}
+            {showSuccessModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center">
+                        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                            📄
+                        </div>
+                        <h3 className="text-2xl font-bold mb-2 text-gray-900">Application Submitted</h3>
+                        <p className="text-gray-600 mb-6">
+                            Your registration has been received and is currently <br />
+                            <span className="font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200 inline-block mt-2 mb-2">
+                                ⏳ Under Review
+                            </span>
+                            <br />
+                            Our team will verify your documents (approx. 24 hours).<br />
+                            Once approved, we will send your <strong>Login Password</strong> to your email.
+                        </p>
+                        <button
+                            onClick={() => navigate('/')}
+                            className="w-full bg-gray-900 text-white font-bold py-3 rounded-xl hover:bg-black transition-colors"
+                        >
+                            Return Home
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
+
+// UI Helper Components
+const Label = ({ children }) => <label className="block text-sm font-bold text-gray-700 mb-2">{children}</label>;
+const Input = (props) => (
+    <input
+        {...props}
+        className="w-full px-4 py-3.5 rounded-xl bg-white border-2 border-gray-100 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all font-medium text-gray-900 placeholder:text-gray-400"
+    />
+);
+
+const FileUpload = ({ label, preview, onChange }) => (
+    <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer hover:bg-blue-50/50 hover:border-blue-400 transition-all group bg-white">
+        <label className="cursor-pointer block w-full">
+            {!preview ? (
+                <>
+                    <div className="w-12 h-12 bg-blue-100/50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                        <span className="text-xl">📄</span>
+                    </div>
+                    <span className="text-sm font-bold text-gray-600 group-hover:text-primary block">{label}</span>
+                    <span className="text-xs text-gray-400 mt-1 block">Click to upload document</span>
+                </>
+            ) : (
+                <div className="relative">
+                    <img src={preview} alt="Preview" className="h-40 mx-auto rounded-lg object-contain shadow-sm" />
+                    <div className="absolute inset-0 bg-black/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                        <span className="bg-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">Change</span>
+                    </div>
+                </div>
+            )}
+            <input type="file" className="hidden" accept="image/*" onChange={onChange} />
+        </label>
+    </div>
+);
 
 export default PartnerRegistration;

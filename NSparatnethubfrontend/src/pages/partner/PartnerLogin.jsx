@@ -4,14 +4,37 @@ import { Link, useNavigate } from 'react-router-dom';
 const PartnerLogin = () => {
     const navigate = useNavigate();
     const [credentials, setCredentials] = useState({ email: '', password: '' });
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Mock Login Logic
-        if (credentials.email && credentials.password) {
-            navigate('/partner/dashboard');
-        } else {
-            alert('Please fill in all fields');
+        setIsLoading(true);
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(credentials)
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                if (data.requirePasswordChange) {
+                    navigate('/partner/change-password', { state: { email: data.email } });
+                    return;
+                }
+
+                // Cookie is set by backend.
+                // Store minimal user info if needed
+                localStorage.setItem('partner_user', JSON.stringify(data.user));
+                navigate('/partner/dashboard');
+            } else {
+                alert(data.message || data.error || 'Login failed');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Something went wrong. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -62,8 +85,8 @@ const PartnerLogin = () => {
                                 />
                             </div>
 
-                            <button type="submit" className="w-full py-4 bg-primary text-white font-black rounded-xl text-lg shadow-xl shadow-primary/30 hover:bg-primary-dark transition-all transform hover:-translate-y-1 active:scale-[0.98]">
-                                Log In
+                            <button disabled={isLoading} type="submit" className="w-full py-4 bg-primary text-white font-black rounded-xl text-lg shadow-xl shadow-primary/30 hover:bg-primary-dark transition-all transform hover:-translate-y-1 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+                                {isLoading ? 'Logging In...' : 'Log In'}
                             </button>
                         </form>
 

@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, Outlet, useNavigate } from 'react-router-dom';
 
 const PartnerLayout = () => {
     const location = useLocation();
+    const navigate = useNavigate();
     const isActive = (path) => location.pathname === path;
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Protected Route Check
+    useEffect(() => {
+        const user = localStorage.getItem('partner_user');
+        if (!user) {
+            navigate('/partner/login');
+        }
+    }, [navigate]);
 
     const navItems = [
         { label: 'Dashboard', path: '/partner/dashboard', icon: '📊' },

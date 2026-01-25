@@ -155,74 +155,73 @@ const MarketingCenter = () => {
                             </div>
                         </div>
                     </div>
+                </div>
             )}
 
-                    {/* INSIGHTS TAB */}
-                    {activeTab === 'insights' && (
-                        <div className="space-y-8">
+            {/* INSIGHTS TAB */}
+            {activeTab === 'insights' && (
+                <div className="space-y-8">
 
-                            {/* Trending Section */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <span className="text-2xl">🔥</span>
-                                        <h3 className="text-xl font-bold text-slate-900">Trending Now</h3>
-                                    </div>
-                                    <div className="space-y-4">
-                                        {trendingTopics.map((item, i) => (
-                                            <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                                <span className="font-bold text-slate-700">#{i + 1} {item.topic}</span>
-                                                <span className="text-green-600 font-bold text-sm bg-green-100 px-2 py-1 rounded">{item.growth}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="bg-gradient-to-br from-[#1DA1F2]/10 to-transparent p-8 rounded-2xl border border-blue-100">
-                                    <div className="flex items-center gap-3 mb-6">
-                                        <span className="text-2xl">💬</span>
-                                        <h3 className="text-xl font-bold text-slate-900">Social Pulse</h3>
-                                    </div>
-                                    <div className="space-y-4">
-                                        {socialBuzz.map((buzz, i) => (
-                                            <div key={i} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                                                <div className="flex justify-between mb-1">
-                                                    <span className="font-bold text-slate-900">{buzz.tag}</span>
-                                                    <span className="text-xs font-bold text-slate-400 uppercase">{buzz.platform}</span>
-                                                </div>
-                                                <p className="text-sm text-slate-500">{buzz.posts} mentions</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                    {/* Trending Section */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                            <div className="flex items-center gap-3 mb-6">
+                                <span className="text-2xl">🔥</span>
+                                <h3 className="text-xl font-bold text-slate-900">Trending Now</h3>
                             </div>
-
-                            {/* Planning Assistant */}
-                            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <span className="text-2xl">📅</span>
-                                    <h3 className="text-xl font-bold text-slate-900">Smart Planner</h3>
-                                </div>
-                                <p className="text-slate-500 mb-6">Based on historical data and competitor analysis, here are the best opportunities for your next event.</p>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="p-5 bg-green-50 rounded-xl border border-green-100">
-                                        <h4 className="font-bold text-green-800 mb-2">Next Weekend Gap</h4>
-                                        <p className="text-sm text-green-700">High demand for <span className="font-bold">Family Events</span> on Saturday, 14th Sep. Low competition detected.</p>
+                            <div className="space-y-4">
+                                {trendingTopics.map((item, i) => (
+                                    <div key={item.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                        <span className="font-bold text-slate-700">#{i + 1} {item.topic}</span>
+                                        <span className="text-green-600 font-bold text-sm bg-green-100 px-2 py-1 rounded">{item.growth}</span>
                                     </div>
-                                    <div className="p-5 bg-purple-50 rounded-xl border border-purple-100">
-                                        <h4 className="font-bold text-purple-800 mb-2">Genre Surge</h4>
-                                        <p className="text-sm text-purple-700">Searches for <span className="font-bold">Jazz/Blues</span> have spiked 40% in Kathmandu this week.</p>
-                                    </div>
-                                    <div className="p-5 bg-orange-50 rounded-xl border border-orange-100">
-                                        <h4 className="font-bold text-orange-800 mb-2">Location Tip</h4>
-                                        <p className="text-sm text-orange-700">Users in <span className="font-bold">Lalitpur</span> are actively looking for events nearby.</p>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
-
                         </div>
-                    )}
+
+                        <div className="bg-gradient-to-br from-[#1DA1F2]/10 to-transparent p-8 rounded-2xl border border-blue-100">
+                            <div className="flex items-center gap-3 mb-6">
+                                <span className="text-2xl">💬</span>
+                                <h3 className="text-xl font-bold text-slate-900">Social Pulse</h3>
+                            </div>
+                            <div className="space-y-4">
+                                {socialBuzz.map((buzz, i) => (
+                                    <div key={i} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="font-bold text-slate-900">{buzz.tag}</span>
+                                            <span className="text-xs font-bold text-slate-400 uppercase">{buzz.platform}</span>
+                                        </div>
+                                        <p className="text-sm text-slate-500">{buzz.posts} mentions</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Planning Assistant */}
+                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                        <div className="flex items-center gap-3 mb-6">
+                            <span className="text-2xl">📅</span>
+                            <h3 className="text-xl font-bold text-slate-900">Smart Planner</h3>
+                        </div>
+                        <p className="text-slate-500 mb-6">Based on historical data and competitor analysis, here are the best opportunities for your next event.</p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="p-5 bg-green-50 rounded-xl border border-green-100">
+                                <h4 className="font-bold text-green-800 mb-2">Next Weekend Gap</h4>
+                                <p className="text-sm text-green-700">High demand for <span className="font-bold">Family Events</span> on Saturday, 14th Sep. Low competition detected.</p>
+                            </div>
+                            <div className="p-5 bg-purple-50 rounded-xl border border-purple-100">
+                                <h4 className="font-bold text-purple-800 mb-2">Genre Surge</h4>
+                                <p className="text-sm text-purple-700">Searches for <span className="font-bold">Jazz/Blues</span> have spiked 40% in Kathmandu this week.</p>
+                            </div>
+                            <div className="p-5 bg-orange-50 rounded-xl border border-orange-100">
+                                <h4 className="font-bold text-orange-800 mb-2">Location Tip</h4>
+                                <p className="text-sm text-orange-700">Users in <span className="font-bold">Lalitpur</span> are actively looking for events nearby.</p>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             )}
         </div>

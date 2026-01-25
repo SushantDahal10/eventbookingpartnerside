@@ -17,6 +17,7 @@ import PartnerChat from './pages/partner/PartnerChat';
 import MarketingCenter from './pages/partner/MarketingCenter';
 import PartnerTicket from './pages/partner/PartnerTicket';
 import ForgotPassword from './pages/partner/ForgotPassword';
+import ChangePassword from './pages/partner/ChangePassword';
 import PaymentGateway from './pages/partner/PaymentGateway';
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
         <Route path="/" element={<PartnerLanding />} />
         <Route path="/become-partner" element={<PartnerLanding />} />
         <Route path="/partner/login" element={<PartnerLogin />} />
+        <Route path="/partner/change-password" element={<ChangePassword />} />
         <Route path="/partner/payment" element={<PaymentGateway />} />
         <Route path="/partner/forgot-password" element={<ForgotPassword />} />
         <Route path="/partner/register" element={<PartnerRegistration />} />
