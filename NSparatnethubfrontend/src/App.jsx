@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import PartnerLayout from './components/layout/PartnerLayout';
 import PartnerLanding from './pages/partner/PartnerLanding';
-import PartnerRegistration from './pages/partner/PartnerRegistration';
+import PartnerRegistration from './pages/partner/PartnerRegistrationV2';
 import PartnerDashboard from './pages/partner/PartnerDashboard';
 import CreateEvent from './pages/partner/CreateEvent';
 import MyEvents from './pages/partner/MyEvents';

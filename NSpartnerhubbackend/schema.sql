@@ -1,3 +1,5 @@
+
+
 --------------------------------------------------
 -- FULL RESET
 --------------------------------------------------
@@ -133,6 +135,13 @@ CREATE TABLE public.partners (
 );
 
 ALTER TABLE public.partners
+ADD COLUMN city TEXT,
+ADD COLUMN full_address TEXT,
+ADD COLUMN state TEXT,
+ADD COLUMN country TEXT;
+
+
+ALTER TABLE public.partners
 DROP CONSTRAINT partners_status_check;
 
 ALTER TABLE public.partners
@@ -140,6 +149,11 @@ ADD CONSTRAINT partners_status_check
 CHECK (status IN ('pending','approved','rejected','resubmitted'));
 
 
+ALTER TABLE public.otps DROP CONSTRAINT IF EXISTS otps_purpose_check;
+
+ALTER TABLE public.otps 
+ADD CONSTRAINT otps_purpose_check 
+CHECK (purpose IN ('password_reset', 'resubmission', 'registration'));
 --------------------------------------------------
 -- PARTNER INDEXES
 --------------------------------------------------
@@ -247,8 +261,6 @@ CREATE TABLE public.events (
 
   location TEXT NOT NULL,
 
-  category TEXT NOT NULL,
-
   ticket_price NUMERIC(10,2) NOT NULL
     CHECK (ticket_price >= 0),
 
@@ -263,6 +275,18 @@ CREATE TABLE public.events (
 
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
+
+ALTER TABLE public.events
+ADD COLUMN full_address TEXT,
+ADD COLUMN city TEXT,
+ADD COLUMN state TEXT,
+ADD COLUMN country TEXT;
+ALTER TABLE public.events
+ALTER COLUMN country SET DEFAULT 'Nepal';
+
+
+ALTER TABLE public.events
+ADD COLUMN category TEXT;
 
 
 

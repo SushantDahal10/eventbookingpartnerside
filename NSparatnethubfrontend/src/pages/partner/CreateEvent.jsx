@@ -12,7 +12,9 @@ const CreateEvent = () => {
         date: '',
         time: '',
         venue: '',
-        address: '',
+        fullAddress: '',
+        city: '',
+        state: '',
         description: '',
         thumbnail: null,
         gallery: [],
@@ -114,7 +116,10 @@ const CreateEvent = () => {
         const fullDate = eventData.time ? `${eventData.date}T${eventData.time}:00` : `${eventData.date}T00:00:00`;
         formData.append('date', fullDate); // Send full timestamp
 
-        formData.append('location', eventData.venue + ', ' + eventData.address);
+        formData.append('location', eventData.venue); // Use venue name as main location
+        formData.append('fullAddress', eventData.fullAddress);
+        formData.append('city', eventData.city);
+        formData.append('state', eventData.state);
 
         // Tiers
         formData.append('tiers', JSON.stringify(eventData.ticketTypes));
@@ -324,20 +329,28 @@ const CreateEvent = () => {
                     <h3 className="text-2xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">Date & Location</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className={labelClasses}>Event Date</label>
+                            <label className={labelClasses}>Event Date <span className="text-red-500">*</span></label>
                             <input type="date" className={inputClasses} value={eventData.date} onChange={(e) => setEventData({ ...eventData, date: e.target.value })} />
                         </div>
                         <div>
-                            <label className={labelClasses}>Start Time</label>
+                            <label className={labelClasses}>Start Time <span className="text-red-500">*</span></label>
                             <input type="time" className={inputClasses} value={eventData.time} onChange={(e) => setEventData({ ...eventData, time: e.target.value })} />
                         </div>
-                        <div>
-                            <label className={labelClasses}>Venue Name</label>
+                        <div className="md:col-span-2">
+                            <label className={labelClasses}>Venue Name <span className="text-red-500">*</span></label>
                             <input type="text" className={inputClasses} placeholder="e.g. Club Fahrenheit" value={eventData.venue} onChange={(e) => setEventData({ ...eventData, venue: e.target.value })} />
                         </div>
+                        <div className="md:col-span-2">
+                            <label className={labelClasses}>Full Address <span className="text-red-500">*</span></label>
+                            <input type="text" className={inputClasses} placeholder="Street Address, Area" value={eventData.fullAddress} onChange={(e) => setEventData({ ...eventData, fullAddress: e.target.value })} />
+                        </div>
                         <div>
-                            <label className={labelClasses}>Address</label>
-                            <input type="text" className={inputClasses} placeholder="Street, City" value={eventData.address} onChange={(e) => setEventData({ ...eventData, address: e.target.value })} />
+                            <label className={labelClasses}>City <span className="text-red-500">*</span></label>
+                            <input type="text" className={inputClasses} placeholder="e.g. Kathmandu" value={eventData.city} onChange={(e) => setEventData({ ...eventData, city: e.target.value })} />
+                        </div>
+                        <div>
+                            <label className={labelClasses}>State / Province <span className="text-red-500">*</span></label>
+                            <input type="text" className={inputClasses} placeholder="e.g. Bagmati" value={eventData.state} onChange={(e) => setEventData({ ...eventData, state: e.target.value })} />
                         </div>
                     </div>
                 </section>

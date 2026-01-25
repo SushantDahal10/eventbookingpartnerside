@@ -34,7 +34,7 @@ const uploadEventImage = async (file, folderPath, fileName, bucket = 'Thumbnail_
 
 exports.createEvent = async (req, res) => {
     // Note: partner_id is derived from `req.user.id` for security
-    const { title, description, category, date, location, tiers } = req.body;
+    const { title, description, category, date, location, fullAddress, city, state, tiers } = req.body;
 
     // Parse tiers if stringified
     let parsedTiers = [];
@@ -108,7 +108,11 @@ exports.createEvent = async (req, res) => {
                 description,
                 category: category || 'Uncategorized', // Default
                 event_date: date,
+                event_date: date,
                 location,
+                full_address: fullAddress,
+                city,
+                state,
                 // created_at is default
             })
             .select()
