@@ -19,7 +19,7 @@ const CreateEvent = () => {
         thumbnail: null,
         gallery: [],
         ticketTypes: [
-            { name: 'General Admission', price: 1000, quantity: 100 }
+            { name: 'General Admission', price: 1000, quantity: 100, perks: [] }
         ]
     });
 
@@ -37,8 +37,8 @@ const CreateEvent = () => {
                 address: 'Thamel, Kathmandu',
                 description: 'The biggest summer festival is back!',
                 ticketTypes: [
-                    { name: 'Early Bird', price: 1500, quantity: 50 },
-                    { name: 'VIP', price: 5000, quantity: 20 }
+                    { name: 'Early Bird', price: 1500, quantity: 50, perks: ['Discounted Price'] },
+                    { name: 'VIP', price: 5000, quantity: 20, perks: ['Front Row', 'Meet & Greet', 'Free Drink'] }
                 ],
                 thumbnail: null, // Would be a URL in real app
                 gallery: []
@@ -60,12 +60,30 @@ const CreateEvent = () => {
     const addTicketType = () => {
         setEventData({
             ...eventData,
-            ticketTypes: [...eventData.ticketTypes, { name: '', price: 0, quantity: 0 }]
+            ticketTypes: [...eventData.ticketTypes, { name: '', price: 0, quantity: 0, perks: [] }]
         });
     };
 
     const removeTicketType = (index) => {
         const newTickets = eventData.ticketTypes.filter((_, i) => i !== index);
+        setEventData({ ...eventData, ticketTypes: newTickets });
+    };
+
+    const handlePerkChange = (ticketIndex, perkIndex, value) => {
+        const newTickets = [...eventData.ticketTypes];
+        newTickets[ticketIndex].perks[perkIndex] = value;
+        setEventData({ ...eventData, ticketTypes: newTickets });
+    };
+
+    const addPerk = (ticketIndex) => {
+        const newTickets = [...eventData.ticketTypes];
+        newTickets[ticketIndex].perks = [...(newTickets[ticketIndex].perks || []), ''];
+        setEventData({ ...eventData, ticketTypes: newTickets });
+    };
+
+    const removePerk = (ticketIndex, perkIndex) => {
+        const newTickets = [...eventData.ticketTypes];
+        newTickets[ticketIndex].perks = newTickets[ticketIndex].perks.filter((_, i) => i !== perkIndex);
         setEventData({ ...eventData, ticketTypes: newTickets });
     };
 
@@ -388,6 +406,26 @@ const CreateEvent = () => {
                                         <p className="text-xl font-black text-green-600">Rs. {(parseInt(ticket.price || 0) * parseInt(ticket.quantity || 0)).toLocaleString()}</p>
                                     </div>
                                 </div>
+                                <div className="mt-4 border-t border-slate-100 pt-4">
+                                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Ticket Perks / Advantages</label>
+                                    <div className="space-y-3">
+                                        {(ticket.perks || []).map((perk, pIndex) => (
+                                            <div key={pIndex} className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    className="flex-1 px-4 py-2 rounded-lg bg-white border border-slate-200 focus:border-blue-500 font-medium text-sm outline-none"
+                                                    placeholder="e.g. Free Drink, Early Access"
+                                                    value={perk}
+                                                    onChange={(e) => handlePerkChange(i, pIndex, e.target.value)}
+                                                />
+                                                <button onClick={() => removePerk(i, pIndex)} className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg font-bold">×</button>
+                                            </div>
+                                        ))}
+                                        <button onClick={() => addPerk(i)} className="text-sm font-bold text-primary hover:underline flex items-center gap-1">
+                                            <span>+</span> Add Perk
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         ))}
                         <button onClick={addTicketType} type="button" className="w-full py-5 border-3 border-dashed border-slate-300 rounded-xl font-bold text-slate-500 hover:border-primary hover:text-primary hover:bg-blue-50 transition-all text-lg flex items-center justify-center gap-3">
@@ -395,8 +433,8 @@ const CreateEvent = () => {
                         </button>
                     </div>
                 </section>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

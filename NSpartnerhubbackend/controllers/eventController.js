@@ -126,7 +126,8 @@ exports.createEvent = async (req, res) => {
             tier_name: t.name,
             price: parseFloat(t.price),
             total_quantity: parseInt(t.quantity),
-            available_quantity: parseInt(t.quantity)
+            available_quantity: parseInt(t.quantity),
+            perks: t.perks || []
         }));
 
         const { error: tierError } = await supabaseAdmin

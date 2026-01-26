@@ -337,6 +337,8 @@ CREATE TABLE public.ticket_tiers (
   available_quantity INTEGER NOT NULL
     CHECK (available_quantity >= 0),
 
+  perks JSONB DEFAULT '[]'::jsonb,
+
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
