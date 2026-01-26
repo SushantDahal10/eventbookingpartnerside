@@ -166,76 +166,107 @@ exports.getDashboardStats = async (req, res) => {
 
         if (eventError) throw eventError;
 
-        // 3. Calculate Aggregates & Per-Event Stats
+        // 3. fetch ALL bookings for these events to get REAL REVENUE
+        const eventIds = events.map(e => e.id);
+
         let totalRevenue = 0;
-        let totalSold = 0;
+        let totalCommission = 0;
+        let totalGross = 0;
+        let totalSold = 0; // Keeping inventory sold as backup/capacity metric
         let activeEvents = 0;
         let eventStats = [];
 
+        // 3a. Initialize basic inventory stats (Active counts, capacity sold)
         events.forEach(event => {
-            let eventRevenue = 0;
-            let eventSold = 0;
-
             if (event.status === 'active' || event.status === 'Live') activeEvents++;
-
-            event.ticket_tiers.forEach(tier => {
-                const sold = tier.total_quantity - tier.available_quantity;
-                const revenue = sold * tier.price;
-                eventRevenue += revenue;
-                eventSold += sold;
+            let eventSoldInventory = 0;
+            event.ticket_tiers.forEach(t => {
+                eventSoldInventory += (t.total_quantity - t.available_quantity);
             });
+            totalSold += eventSoldInventory;
 
-            totalRevenue += eventRevenue;
-            totalSold += eventSold;
-
+            // Initialize stats struct
             eventStats.push({
                 id: event.id,
                 title: event.title,
                 date: new Date(event.event_date).toLocaleDateString(),
                 status: event.status,
-                revenue: eventRevenue,
-                sold: eventSold
+                sold: eventSoldInventory,
+                revenue: 0, // Will fill below
+                gross: 0,
+                commission: 0
             });
         });
+
+        // 3b. Fetch REAL Paid Bookings
+        let salesTrend = [];
+
+        if (eventIds.length > 0) {
+            const { data: bookings, error: bookingError } = await supabaseAdmin
+                .from('bookings')
+                .select('created_at, total_amount, event_id')
+                .in('event_id', eventIds)
+                .eq('status', 'paid')
+                .order('created_at', { ascending: true });
+
+            if (!bookingError && bookings) {
+                // --- Total Revenue Calculation ---
+                bookings.forEach(b => {
+                    const amount = parseFloat(b.total_amount);
+                    const comm = amount * 0.05;
+                    const net = amount * 0.95;
+
+                    totalGross += amount;
+                    totalCommission += comm;
+                    totalRevenue += net;
+
+                    // Add to specific event stats
+                    const evStat = eventStats.find(e => e.id === b.event_id);
+                    if (evStat) {
+                        evStat.gross += amount;
+                        evStat.commission += comm;
+                        evStat.revenue += net;
+                    }
+                });
+
+                // --- Sales Trend Logic (Booking Count) ---
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                const trendMap = {};
+                // Initialize last 30 days with 0
+                for (let i = 29; i >= 0; i--) {
+                    const d = new Date();
+                    d.setDate(d.getDate() - i);
+                    trendMap[d.toLocaleDateString()] = 0;
+                }
+
+                bookings.forEach(b => {
+                    const bookingDate = new Date(b.created_at);
+                    if (bookingDate >= thirtyDaysAgo) {
+                        const dateStr = bookingDate.toLocaleDateString();
+                        if (trendMap[dateStr] !== undefined) {
+                            trendMap[dateStr] += 1; // Count bookings
+                        }
+                    }
+                });
+
+                salesTrend = Object.keys(trendMap).map(date => ({
+                    date,
+                    tickets: trendMap[date]
+                }));
+            }
+        }
 
         // 4. Sort for Top Performing Events (Top 5)
         const topEvents = [...eventStats]
             .sort((a, b) => b.revenue - a.revenue)
             .slice(0, 5);
 
-        // 5. Calculate Sales Trend (Last 30 Days)
-        // We need to fetch bookings for ALL these events.
-        const eventIds = events.map(e => e.id);
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        let salesTrend = [];
-
-        if (eventIds.length > 0) {
-            const { data: bookings, error: bookingError } = await supabaseAdmin
-                .from('bookings')
-                .select('created_at, total_amount')
-                .in('event_id', eventIds)
-                .eq('status', 'paid')
-                .gte('created_at', thirtyDaysAgo.toISOString())
-                .order('created_at', { ascending: true });
-
-            if (!bookingError && bookings) {
-                const trendMap = {};
-                bookings.forEach(b => {
-                    const date = new Date(b.created_at).toLocaleDateString();
-                    trendMap[date] = (trendMap[date] || 0) + parseFloat(b.total_amount);
-                });
-
-                salesTrend = Object.keys(trendMap).map(date => ({
-                    date,
-                    revenue: trendMap[date]
-                }));
-            }
-        }
-
         res.json({
             totalRevenue,
+            totalCommission,
+            totalGross,
             totalSold,
             activeEvents,
             topEvents,
@@ -248,6 +279,7 @@ exports.getDashboardStats = async (req, res) => {
     }
 };
 
+
 // ------------------------------------------------------------------
 // EARNINGS & PAYOUTS
 // ------------------------------------------------------------------
@@ -257,10 +289,10 @@ exports.getEarnings = async (req, res) => {
         if (!req.user || !req.user.id) return res.status(401).json({ error: 'Unauthorized' });
         const userId = req.user.id;
 
-        // 1. Get Partner ID
+        // 1. Get Partner ID & Bank Details
         const { data: partner, error: pError } = await supabaseAdmin
             .from('partners')
-            .select('id')
+            .select('id, bank_name, bank_branch, account_number, account_holder_name')
             .eq('user_id', userId)
             .single();
 
@@ -269,12 +301,13 @@ exports.getEarnings = async (req, res) => {
 
         // 2. Calculate Total Revenue (Paid Bookings)
         // Find all events first
-        // Find all events first
         const { data: events } = await supabaseAdmin.from('events').select('id, status, title').eq('partner_id', partnerId);
         const eventIds = events.map(e => e.id);
         const completedEventIds = new Set(events.filter(e => e.status === 'completed' || e.status === 'Ended').map(e => e.id));
 
-        let totalRevenue = 0;
+        let totalRevenue = 0; // Net
+        let totalGross = 0;
+        let totalCommission = 0;
         let pendingClearance = 0;
 
         if (eventIds.length > 0) {
@@ -295,14 +328,19 @@ exports.getEarnings = async (req, res) => {
 
                 bookings.forEach(b => {
                     const bookingTime = new Date(b.created_at).getTime();
-                    const amount = parseFloat(b.total_amount);
+                    // bookings.total_amount is GROSS paid by user
+                    const grossAmount = parseFloat(b.total_amount);
+                    const comm = grossAmount * 0.05;
+                    const netAmount = grossAmount * 0.95;
                     const isCompletedEvent = completedEventIds.has(b.event_id);
 
-                    totalRevenue += amount;
+                    totalGross += grossAmount;
+                    totalCommission += comm;
+                    totalRevenue += netAmount; // Net
 
                     // Pending if: Event not completed OR Payment < 3 days old
                     if (!isCompletedEvent || (now - bookingTime < clearanceWindow)) {
-                        pendingClearance += amount;
+                        pendingClearance += netAmount;
                     }
                 });
             }
@@ -344,6 +382,8 @@ exports.getEarnings = async (req, res) => {
                 eventId: e.id,
                 title: e.title || 'Untitled Event',
                 revenue: 0,
+                commission: 0,
+                gross: 0,
                 pending: 0,
                 withdrawn: 0,
                 balance: 0,
@@ -361,18 +401,27 @@ exports.getEarnings = async (req, res) => {
 
             if (bookings) {
                 const now = new Date();
-                const clearanceWindow = 3 * 24 * 60 * 60 * 1000;
+
+                // const clearanceWindow = 3 * 24 * 60 * 60 * 1000; // 3 Days standard
+                const clearanceWindow = 0; // Immediate release for testing
 
                 bookings.forEach(b => {
-                    const amt = parseFloat(b.total_amount);
+                    const amt = parseFloat(b.total_amount) * 0.95; // Deduct 5% Commission
                     const eid = b.event_id;
                     const isCompleted = completedEventIds.has(eid);
 
                     if (eventStats[eid]) {
-                        eventStats[eid].revenue += amt;
+                        const grossAmt = parseFloat(b.total_amount); // Booking total_amount is Gross
+                        const comm = grossAmt * 0.05;
+                        const net = grossAmt * 0.95;
+
+                        eventStats[eid].revenue += net;
+                        eventStats[eid].commission += comm;
+                        eventStats[eid].gross += grossAmt;
+
                         // Checking individual event rules for pending/balance
                         if (!isCompleted || (now - new Date(b.created_at).getTime() < clearanceWindow)) {
-                            eventStats[eid].pending += amt;
+                            eventStats[eid].pending += net;
                         }
                     }
                 });
@@ -400,11 +449,19 @@ exports.getEarnings = async (req, res) => {
         });
 
         res.json({
-            totalRevenue,
+            totalRevenue, // Net
+            totalGross,
+            totalCommission,
             pendingClearance,
             totalWithdrawn,
             availableBalance,
-            events: Object.values(eventStats)
+            events: Object.values(eventStats),
+            bankDetails: {
+                bankName: partner.bank_name,
+                branch: partner.bank_branch,
+                accountNumber: partner.account_number,
+                accountHolder: partner.account_holder_name
+            }
         });
 
     } catch (err) {
@@ -458,14 +515,15 @@ exports.requestPayout = async (req, res) => {
             if (bookings) {
                 const now = new Date();
                 bookings.forEach(b => {
-                    const amt = parseFloat(b.total_amount);
+                    const amt = parseFloat(b.total_amount) * 0.95; // Deduct 5% Commission
                     const isCompleted = completedEventIds.has(b.event_id);
 
                     grossIncome += amt;
 
                     // Hold if event not completed OR < 3 days
-                    if (!isCompleted || (now - new Date(b.created_at)) < (3 * 86400000)) {
-                        clearanceHold += amt;
+                    // For testing: DISABLED HOLD
+                    if (!isCompleted || (now - new Date(b.created_at)) < 0) {
+                        // clearanceHold += amt; 
                     }
                 });
             }
@@ -590,20 +648,32 @@ exports.initiatePayout = async (req, res) => {
 
         if (bookings) {
             bookings.forEach(b => {
-                const amt = parseFloat(b.total_amount);
+                const amt = parseFloat(b.total_amount) * 0.95; // Deduct 5% Commission
                 grossEventRevenue += amt;
-                if ((now - new Date(b.created_at)) < (3 * 86400000)) clearanceHold += amt;
+                // TEST: Disabled 3-day hold
+                if ((now - new Date(b.created_at)) < 0) clearanceHold += amt;
             });
         }
 
         const { data: eventPayouts } = await supabaseAdmin
             .from('payouts')
-            .select('amount')
+            .select('amount, status')
             .eq('event_id', event_id)
             .neq('status', 'rejected');
 
         let withdrawn = 0;
-        if (eventPayouts) eventPayouts.forEach(p => withdrawn += parseFloat(p.amount));
+        let hasPending = false;
+
+        if (eventPayouts) {
+            eventPayouts.forEach(p => {
+                withdrawn += parseFloat(p.amount);
+                if (p.status === 'pending') hasPending = true;
+            });
+        }
+
+        if (hasPending) {
+            return res.status(400).json({ error: 'You already have a pending withdrawal for this event. Please wait for it to be processed.' });
+        }
 
         const available = (grossEventRevenue - clearanceHold) - withdrawn;
 
@@ -676,9 +746,10 @@ exports.confirmPayout = async (req, res) => {
         const now = new Date();
 
         if (bookings) bookings.forEach(b => {
-            const amt = parseFloat(b.total_amount);
+            const amt = parseFloat(b.total_amount) * 0.95; // Deduct 5% Commission
             gross += amt;
-            if ((now - new Date(b.created_at)) < (3 * 86400000)) hold += amt;
+            // TEST: Disabled 3-day hold
+            if ((now - new Date(b.created_at)) < 0) hold += amt;
         });
 
         const { data: eventPayouts } = await supabaseAdmin

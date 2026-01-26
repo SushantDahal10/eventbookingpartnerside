@@ -58,21 +58,22 @@ const EventAnalytics = () => {
             </div>
 
             {/* KEY METRICS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                    <p className="text-xs font-bold uppercase text-slate-400 mb-2">Total Revenue</p>
-                    <h3 className="text-3xl font-black text-slate-900 text-green-600">{revenueFormatted}</h3>
+                    <p className="text-xs font-bold uppercase text-slate-400 mb-2">Net Revenue (95%)</p>
+                    <h3 className="text-3xl font-black text-slate-900 text-green-600">Rs. {analyticsData.totalRevenue.toLocaleString()}</h3>
                 </div>
                 <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                    <p className="text-xs font-bold uppercase text-slate-400 mb-2">Total Tickets Sold</p>
+                    <p className="text-xs font-bold uppercase text-slate-400 mb-2">Platform Fees (5%)</p>
+                    <h3 className="text-3xl font-black text-red-500">Rs. {analyticsData.totalCommission.toLocaleString()}</h3>
+                </div>
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                    <p className="text-xs font-bold uppercase text-slate-400 mb-2">Gross Sales</p>
+                    <h3 className="text-3xl font-black text-slate-900">Rs. {analyticsData.totalGross.toLocaleString()}</h3>
+                </div>
+                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                    <p className="text-xs font-bold uppercase text-slate-400 mb-2">Total Tickets</p>
                     <h3 className="text-3xl font-black text-slate-900">{totalSold} <span className="text-lg text-slate-400 font-medium">/ {totalCapacity}</span></h3>
-                </div>
-                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-                    <p className="text-xs font-bold uppercase text-slate-400 mb-2">Occupancy</p>
-                    <h3 className="text-3xl font-black text-slate-900">{percentSold}%</h3>
-                    <div className="w-full bg-slate-100 h-2 rounded-full mt-2 overflow-hidden">
-                        <div className="bg-blue-600 h-full" style={{ width: `${percentSold}%` }}></div>
-                    </div>
                 </div>
             </div>
 
@@ -81,25 +82,60 @@ const EventAnalytics = () => {
 
                 {/* Sales Trend Chart */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                    <h3 className="text-lg font-bold text-slate-900 mb-6">Revenue Trend (Last 30 Days)</h3>
+                    <h3 className="text-lg font-bold text-slate-900 mb-6">Daily Ticket Sales</h3>
                     <div className="h-64 w-full">
                         {salesTrend && salesTrend.length > 0 ? (
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={salesTrend}>
+                                <AreaChart data={salesTrend} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                     <defs>
-                                        <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
-                                            <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#FF4D00" stopOpacity={0.2} />
+                                            <stop offset="95%" stopColor="#FF4D00" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
-                                    <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} />
-                                    <YAxis fontSize={10} tickLine={false} axisLine={false} tickFormatter={(value) => `Rs.${value / 1000}k`} />
-                                    <Tooltip
-                                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                        formatter={(value) => [`Rs. ${value.toLocaleString()}`, 'Revenue']}
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.6} />
+                                    <XAxis
+                                        dataKey="date"
+                                        fontSize={10}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tick={{ fill: '#94a3b8', fontWeight: 600 }}
+                                        dy={10}
                                     />
-                                    <CartesianGrid vertical={false} stroke="#E2E8F0" strokeDasharray="3 3" />
-                                    <Area type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorPv)" />
+                                    <YAxis
+                                        fontSize={10}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        // tickFormatter={(value) => `Rs.${value / 1000}k`} // Removed currency formatting
+                                        tick={{ fill: '#94a3b8', fontWeight: 600 }}
+                                        allowDecimals={false} // Integer only
+                                        dx={-10}
+                                    />
+                                    <Tooltip
+                                        content={({ active, payload, label }) => {
+                                            if (active && payload && payload.length) {
+                                                return (
+                                                    <div className="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700">
+                                                        <p className="text-xs font-bold text-slate-400 mb-1">{label}</p>
+                                                        <p className="text-lg font-black text-white">
+                                                            {payload[0].value} Tickets
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                        cursor={{ stroke: '#FF4D00', strokeWidth: 2, strokeDasharray: '4 4' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="tickets" // CHANGED FROM revenue
+                                        stroke="#FF4D00"
+                                        strokeWidth={4}
+                                        fillOpacity={1}
+                                        fill="url(#colorRevenue)"
+                                        activeDot={{ r: 8, strokeWidth: 4, stroke: '#fff', fill: '#FF4D00' }}
+                                    />
                                 </AreaChart>
                             </ResponsiveContainer>
                         ) : (

@@ -206,8 +206,15 @@ exports.getMyEvents = async (req, res) => {
 
             const revenue = e.ticket_tiers.reduce((acc, t) => {
                 const tierSold = t.total_quantity - t.available_quantity;
+                return acc + (tierSold * t.price * 0.95); // Net Revenue
+            }, 0);
+
+            const grossRevenue = e.ticket_tiers.reduce((acc, t) => {
+                const tierSold = t.total_quantity - t.available_quantity;
                 return acc + (tierSold * t.price);
             }, 0);
+
+            const commission = grossRevenue * 0.05;
 
             return {
                 id: e.id,
@@ -219,6 +226,8 @@ exports.getMyEvents = async (req, res) => {
                 sold: sold,
                 capacity: totalCapacity,
                 revenue: `Rs. ${revenue.toLocaleString()}`,
+                gross: `Rs. ${grossRevenue.toLocaleString()}`,
+                commission: `Rs. ${commission.toLocaleString()}`,
                 img: coverImage,
                 views: "0",
                 conversion: "0%"
@@ -269,16 +278,69 @@ exports.getEventAnalytics = async (req, res) => {
 
         if (eventError || !event) return res.status(404).json({ error: 'Event not found' });
 
-        // 3. Calculate Analytics
-        let totalRevenue = 0;
-        let totalSold = 0;
+        // 3. Fetch ALL Paid Bookings for Financial Accuracy
+        const { data: bookings, error: bookingError } = await supabaseAdmin
+            .from('bookings')
+            .select('created_at, total_amount')
+            .eq('event_id', id)
+            .eq('status', 'paid')
+            .order('created_at', { ascending: true });
+
+        if (bookingError) throw bookingError;
+
+        // 4. Calculate Financials from Bookings (Source of Truth)
+        let totalRevenue = 0; // Net
+        let totalGross = 0;
+        let totalCommission = 0;
+
+        let salesTrend = [];
+
+        if (bookings && bookings.length > 0) {
+            // Calculate Totals
+            totalGross = bookings.reduce((sum, b) => sum + parseFloat(b.total_amount), 0);
+            totalCommission = totalGross * 0.05;
+            totalRevenue = totalGross * 0.95;
+
+            // Generate Ticket Sales Trend (Last 30 Days)
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            const trendMap = {};
+            // Initialize last 30 days with 0
+            for (let i = 29; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                trendMap[d.toLocaleDateString()] = 0;
+            }
+
+            bookings.forEach(b => {
+                const bookingDate = new Date(b.created_at);
+                if (bookingDate >= thirtyDaysAgo) {
+                    const dateStr = bookingDate.toLocaleDateString();
+                    if (trendMap[dateStr] !== undefined) {
+                        trendMap[dateStr] += 1; // Count bookings as tickets
+                    }
+                }
+            });
+
+            salesTrend = Object.keys(trendMap).map(date => ({
+                date,
+                tickets: trendMap[date]
+            }));
+        }
+
+        // 5. Calculate Tier Stats (Capacity/Sold only)
+        let totalSold = 0; // From inventory logic for capacity
         let totalCapacity = 0;
 
         const tiersAnalytics = event.ticket_tiers.map(tier => {
             const sold = tier.total_quantity - tier.available_quantity;
-            const revenue = sold * tier.price;
+            // Revenue here is estimated from tiers, but we rely on bookings for Cards
+            const gross = sold * tier.price;
+            const comm = gross * 0.05;
+            const net = gross * 0.95;
 
-            totalRevenue += revenue;
+            // We do NOT add to totalRevenue here anymore
             totalSold += sold;
             totalCapacity += tier.total_quantity;
 
@@ -288,43 +350,19 @@ exports.getEventAnalytics = async (req, res) => {
                 capacity: tier.total_quantity,
                 available: tier.available_quantity,
                 sold: sold,
-                revenue: revenue
+                revenue: net,
+                gross: gross,
+                commission: comm
             };
         });
-
-        // 4. Fetch Sales Trend (Last 30 Days)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        const { data: bookings, error: bookingError } = await supabaseAdmin
-            .from('bookings')
-            .select('created_at, total_amount')
-            .eq('event_id', id)
-            .eq('status', 'paid')
-            .gte('created_at', thirtyDaysAgo.toISOString())
-            .order('created_at', { ascending: true });
-
-        let salesTrend = [];
-        if (!bookingError && bookings) {
-            // Group by date
-            const trendMap = {};
-            bookings.forEach(b => {
-                const date = new Date(b.created_at).toLocaleDateString();
-                trendMap[date] = (trendMap[date] || 0) + parseFloat(b.total_amount);
-            });
-
-            // Format for Frontend
-            salesTrend = Object.keys(trendMap).map(date => ({
-                date,
-                revenue: trendMap[date]
-            }));
-        }
 
         // 5. Return Data
         res.json({
             eventTitle: event.title,
             status: event.status,
             totalRevenue,
+            totalGross,
+            totalCommission,
             totalSold,
             totalCapacity,
             tiers: tiersAnalytics,

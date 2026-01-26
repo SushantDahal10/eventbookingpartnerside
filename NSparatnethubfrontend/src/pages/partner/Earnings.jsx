@@ -274,6 +274,18 @@ const Earnings = () => {
         }).format(amount || 0);
     };
 
+    // Auto-fill bank details
+    useEffect(() => {
+        if (showWithdrawModal && stats.bankDetails) {
+            setWithdrawalData(prev => ({
+                ...prev,
+                bankName: stats.bankDetails.bankName || '',
+                accountNumber: stats.bankDetails.accountNumber || '',
+                accountHolder: stats.bankDetails.accountHolder || ''
+            }));
+        }
+    }, [showWithdrawModal, stats.bankDetails]);
+
     if (loading) {
         return (
             <div className="flex h-96 items-center justify-center">
@@ -283,31 +295,54 @@ const Earnings = () => {
     }
 
     return (
-        <div className="animate-[fadeIn_0.5s]">
-            <div className="flex justify-between items-end mb-8">
-                <h1 className="text-3xl font-heading font-extrabold text-slate-900">Earnings & Payouts</h1>
+        <div className="animate-[fadeIn_0.5s] p-6 lg:p-10 pb-20 space-y-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                <div>
+                    <h1 className="text-3xl font-heading font-black text-slate-900 mb-2">Earnings & Payouts</h1>
+                    <p className="text-slate-500 font-medium">Track your revenue, platform fees, and manage withdrawals.</p>
+                </div>
+                <button
+                    onClick={() => { setShowWithdrawModal(true); setStep(1); }}
+                    className="px-6 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all transform hover:-translate-y-1 flex items-center gap-2"
+                >
+                    <span>💸</span> Request Withdrawal
+                </button>
             </div>
 
-            {/* Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                <div className="bg-slate-900 text-white rounded-xl p-8 shadow-xl relative overflow-hidden">
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Total Available</p>
-                    <h2 className="text-4xl font-black mb-6">{formatCurrency(stats.availableBalance)}</h2>
-                    <button
-                        onClick={() => { setShowWithdrawModal(true); setStep(1); }}
-                        className="w-full py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-dark transition-colors shadow-lg shadow-primary/30"
-                    >
-                        Request Withdrawal
-                    </button>
+            {/* FINANCIAL BREAKDOWN CARDS */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* 1. Gross Sales */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                    <p className="text-xs font-bold uppercase text-slate-400 mb-2 tracking-wider">Total Gross Sales</p>
+                    <h3 className="text-3xl font-black text-slate-900">
+                        {formatCurrency(stats.totalGross || 0)}
+                    </h3>
                 </div>
-                {/* ... other summary cards ... */}
-                <div className="bg-white rounded-xl p-8 border border-slate-200">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Revenue</p>
-                    <h2 className="text-3xl font-black text-slate-900 mb-2">{formatCurrency(stats.totalRevenue)}</h2>
+
+                {/* 2. Platform Fees */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                    <p className="text-xs font-bold uppercase text-slate-400 mb-2 tracking-wider">Partner Fees (5%)</p>
+                    <h3 className="text-3xl font-black text-red-500">
+                        - {formatCurrency(stats.totalCommission || 0)}
+                    </h3>
                 </div>
-                <div className="bg-white rounded-xl p-8 border border-slate-200">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Withdrawn</p>
-                    <h2 className="text-3xl font-black text-slate-900 mb-2">{formatCurrency(stats.totalWithdrawn)}</h2>
+
+                {/* 3. Net Earnings */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden group">
+                    <p className="text-xs font-bold uppercase text-green-600 mb-2 tracking-wider">Net Earnings</p>
+                    <h3 className="text-3xl font-black text-green-600">
+                        {formatCurrency(stats.totalRevenue || 0)}
+                    </h3>
+                    <p className="text-xs font-bold text-slate-300 mt-1">After 5% Deduction</p>
+                </div>
+
+                {/* 4. Available for Withdrawal */}
+                <div className="bg-slate-900 p-6 rounded-2xl shadow-xl relative overflow-hidden group text-white">
+                    <div className="absolute -right-4 -bottom-4 bg-white/10 w-32 h-32 rounded-full blur-2xl group-hover:bg-white/20 transition-all"></div>
+                    <p className="text-xs font-bold uppercase text-slate-400 mb-2 tracking-wider">Available for Payout</p>
+                    <h3 className="text-4xl font-black text-white">
+                        {formatCurrency(stats.availableBalance || 0)}
+                    </h3>
                 </div>
             </div>
 
@@ -321,7 +356,9 @@ const Earnings = () => {
                         <thead className="bg-slate-50 text-slate-500 font-bold uppercase">
                             <tr>
                                 <th className="px-6 py-4">Event Name</th>
-                                <th className="px-6 py-4 text-right">Revenue</th>
+                                <th className="px-6 py-4 text-right">Gross Sales</th>
+                                <th className="px-6 py-4 text-right">Partner Fees (5%)</th>
+                                <th className="px-6 py-4 text-right">Net Revenue</th>
                                 <th className="px-6 py-4 text-right">Withdrawn</th>
                                 <th className="px-6 py-4 text-right">Balance</th>
                             </tr>
@@ -330,6 +367,12 @@ const Earnings = () => {
                             {stats.events.map(ev => (
                                 <tr key={ev.eventId}>
                                     <td className="px-6 py-4 font-bold text-slate-900">{ev.title}</td>
+                                    <td className="px-6 py-4 text-right font-medium text-slate-500">
+                                        {formatCurrency(ev.gross || 0)}
+                                    </td>
+                                    <td className="px-6 py-4 text-right font-medium text-orange-600">
+                                        -{formatCurrency(ev.commission || 0)}
+                                    </td>
                                     <td className="px-6 py-4 text-right font-medium text-green-700">
                                         {formatCurrency(ev.revenue)}
                                     </td>
@@ -484,130 +527,132 @@ const Earnings = () => {
                         )}
                     </table>
                 </div>
-            </div>
+            </div >
 
             {/* WITHDRAWAL MODAL */}
-            {showWithdrawModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-[fadeIn_0.3s]">
-                        <h3 className="text-2xl font-black text-slate-900 mb-2">
-                            {step === 1 ? 'Request Withdrawal' : 'Verify OTP'}
-                        </h3>
+            {
+                showWithdrawModal && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-[fadeIn_0.3s]">
+                            <h3 className="text-2xl font-black text-slate-900 mb-2">
+                                {step === 1 ? 'Request Withdrawal' : 'Verify OTP'}
+                            </h3>
 
-                        {step === 1 ? (
-                            <form onSubmit={handleInitiate} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-1">Select Event</label>
-                                    <select
-                                        name="eventId"
-                                        value={withdrawalData.eventId}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 font-bold outline-none"
-                                    >
-                                        {stats.events.map(ev => (
-                                            <option key={ev.eventId} value={ev.eventId}>
-                                                {ev.title}
-                                            </option>
-                                        ))}
-                                    </select>
-
-                                    {/* Selected Event Details */}
-                                    {withdrawalData.eventId && (
-                                        <div className="mt-3 bg-slate-50 p-3 rounded-lg text-sm">
-                                            <div className="flex justify-between mb-1">
-                                                <span className="text-slate-500">Total Revenue:</span>
-                                                <span className="font-bold text-slate-700">
-                                                    {formatCurrency(stats.events.find(e => e.eventId === withdrawalData.eventId)?.revenue || 0)}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span className="text-slate-500">Available to Withdraw:</span>
-                                                <span className="font-bold text-green-600">
-                                                    {formatCurrency(getSelectedEventBalance())}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-1">Amount</label>
-                                    <div className="relative">
-                                        <input
-                                            type="number"
-                                            name="amount"
-                                            required
-                                            max={getSelectedEventBalance()}
-                                            min="1000"
-                                            className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 font-bold text-lg outline-none pr-24"
-                                            value={withdrawalData.amount}
+                            {step === 1 ? (
+                                <form onSubmit={handleInitiate} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1">Select Event</label>
+                                        <select
+                                            name="eventId"
+                                            value={withdrawalData.eventId}
                                             onChange={handleChange}
-                                            placeholder="0.00"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setWithdrawalData(prev => ({ ...prev, amount: getSelectedEventBalance() }))}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold bg-slate-100 px-3 py-1.5 rounded-md hover:bg-slate-200 text-slate-600"
+                                            className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 font-bold outline-none"
                                         >
-                                            MAX
+                                            {stats.events.map(ev => (
+                                                <option key={ev.eventId} value={ev.eventId}>
+                                                    {ev.title}
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        {/* Selected Event Details */}
+                                        {withdrawalData.eventId && (
+                                            <div className="mt-3 bg-slate-50 p-3 rounded-lg text-sm">
+                                                <div className="flex justify-between mb-1">
+                                                    <span className="text-slate-500">Total Revenue:</span>
+                                                    <span className="font-bold text-slate-700">
+                                                        {formatCurrency(stats.events.find(e => e.eventId === withdrawalData.eventId)?.revenue || 0)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span className="text-slate-500">Available to Withdraw:</span>
+                                                    <span className="font-bold text-green-600">
+                                                        {formatCurrency(getSelectedEventBalance())}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1">Amount</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                name="amount"
+                                                required
+                                                max={getSelectedEventBalance()}
+                                                min="1000"
+                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 font-bold text-lg outline-none pr-24"
+                                                value={withdrawalData.amount}
+                                                onChange={handleChange}
+                                                placeholder="0.00"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setWithdrawalData(prev => ({ ...prev, amount: getSelectedEventBalance() }))}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold bg-slate-100 px-3 py-1.5 rounded-md hover:bg-slate-200 text-slate-600"
+                                            >
+                                                MAX
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-1">Confirm Password</label>
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            required
+                                            className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 font-bold outline-none"
+                                            value={withdrawalData.password}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+
+                                    <div className="flex gap-3 pt-4">
+                                        <button type="button" onClick={() => setShowWithdrawModal(false)} className="flex-1 py-3 font-bold text-slate-600 hover:bg-slate-50 rounded-lg">Cancel</button>
+                                        <button type="submit" disabled={submitting} className="flex-1 py-3 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 disabled:opacity-50">
+                                            {submitting ? 'Processing...' : 'Next →'}
                                         </button>
                                     </div>
-                                </div>
+                                </form>
+                            ) : (
+                                <form onSubmit={handleConfirm} className="space-y-6">
+                                    <p className="text-sm text-slate-500">
+                                        We sent a verification code to your email. Please enter it below to confirm withdrawal of
+                                        <span className="font-bold text-slate-900"> {formatCurrency(withdrawalData.amount)}</span>.
+                                    </p>
 
-                                <div>
-                                    <label className="block text-sm font-bold text-slate-700 mb-1">Confirm Password</label>
                                     <input
-                                        type="password"
-                                        name="password"
+                                        type="text"
+                                        name="otp"
                                         required
-                                        className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 font-bold outline-none"
-                                        value={withdrawalData.password}
+                                        placeholder="Enter 6-digit code"
+                                        className="w-full px-4 py-4 rounded-lg border-2 border-slate-200 font-black text-center text-2xl tracking-widest outline-none focus:border-slate-900"
+                                        value={withdrawalData.otp}
                                         onChange={handleChange}
                                     />
-                                </div>
 
-                                <div className="flex gap-3 pt-4">
-                                    <button type="button" onClick={() => setShowWithdrawModal(false)} className="flex-1 py-3 font-bold text-slate-600 hover:bg-slate-50 rounded-lg">Cancel</button>
-                                    <button type="submit" disabled={submitting} className="flex-1 py-3 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 disabled:opacity-50">
-                                        {submitting ? 'Processing...' : 'Next →'}
+                                    <button type="submit" disabled={submitting} className="w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors shadow-lg shadow-green-600/20 disabled:opacity-50">
+                                        {submitting ? 'Verifying...' : 'Confirm Withdrawal'}
                                     </button>
-                                </div>
-                            </form>
-                        ) : (
-                            <form onSubmit={handleConfirm} className="space-y-6">
-                                <p className="text-sm text-slate-500">
-                                    We sent a verification code to your email. Please enter it below to confirm withdrawal of
-                                    <span className="font-bold text-slate-900"> {formatCurrency(withdrawalData.amount)}</span>.
-                                </p>
-
-                                <input
-                                    type="text"
-                                    name="otp"
-                                    required
-                                    placeholder="Enter 6-digit code"
-                                    className="w-full px-4 py-4 rounded-lg border-2 border-slate-200 font-black text-center text-2xl tracking-widest outline-none focus:border-slate-900"
-                                    value={withdrawalData.otp}
-                                    onChange={handleChange}
-                                />
-
-                                <button type="submit" disabled={submitting} className="w-full py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors shadow-lg shadow-green-600/20 disabled:opacity-50">
-                                    {submitting ? 'Verifying...' : 'Confirm Withdrawal'}
-                                </button>
-                                <div className="text-center">
-                                    <button
-                                        type="button"
-                                        onClick={handleInitiate}
-                                        disabled={submitting}
-                                        className="text-sm font-bold text-slate-500 hover:text-slate-900 underline disabled:opacity-50"
-                                    >
-                                        Resend Code
-                                    </button>
-                                </div>
-                            </form>
-                        )}
+                                    <div className="text-center">
+                                        <button
+                                            type="button"
+                                            onClick={handleInitiate}
+                                            disabled={submitting}
+                                            className="text-sm font-bold text-slate-500 hover:text-slate-900 underline disabled:opacity-50"
+                                        >
+                                            Resend Code
+                                        </button>
+                                    </div>
+                                </form>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </div>
     );
 };

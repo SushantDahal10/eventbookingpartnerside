@@ -224,12 +224,30 @@ const CreateEvent = () => {
                     </nav>
 
                     <div className="mt-8 pt-8 border-t border-slate-100">
-                        <div className="px-2 mb-4">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Capacity</p>
-                            <p className="text-3xl font-black text-slate-900 mb-4">{eventData.ticketTypes.reduce((acc, curr) => acc + parseInt(curr.quantity || 0), 0)}</p>
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Capacity</p>
+                                <p className="text-3xl font-black text-slate-900">{eventData.ticketTypes.reduce((acc, curr) => acc + parseInt(curr.quantity || 0), 0)} Tickets</p>
+                            </div>
 
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Potential Revenue</p>
-                            <p className="text-xl font-black text-green-600">Rs. {eventData.ticketTypes.reduce((acc, curr) => acc + (parseInt(curr.price || 0) * parseInt(curr.quantity || 0)), 0).toLocaleString()}</p>
+                            <div className="pt-4 border-t border-slate-100">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Est. Financials</p>
+
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm font-bold text-slate-500">Gross Sales</span>
+                                    <span className="text-sm font-black text-slate-900">Rs. {eventData.ticketTypes.reduce((acc, curr) => acc + (parseInt(curr.price || 0) * parseInt(curr.quantity || 0)), 0).toLocaleString()}</span>
+                                </div>
+
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-bold text-slate-500">Platform Fee (5%)</span>
+                                    <span className="text-sm font-bold text-red-500">- Rs. {(eventData.ticketTypes.reduce((acc, curr) => acc + (parseInt(curr.price || 0) * parseInt(curr.quantity || 0)), 0) * 0.05).toLocaleString()}</span>
+                                </div>
+
+                                <div className="flex justify-between items-center pt-2 border-t border-dashed border-slate-200">
+                                    <span className="text-sm font-black text-slate-900 uppercase">Net Earning</span>
+                                    <span className="text-xl font-black text-green-600">Rs. {(eventData.ticketTypes.reduce((acc, curr) => acc + (parseInt(curr.price || 0) * parseInt(curr.quantity || 0)), 0) * 0.95).toLocaleString()}</span>
+                                </div>
+                            </div>
                         </div>
                         <button onClick={handleSubmit} className="w-full py-4 bg-primary text-white font-bold rounded-lg shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all transform hover:-translate-y-1">
                             Publish Event

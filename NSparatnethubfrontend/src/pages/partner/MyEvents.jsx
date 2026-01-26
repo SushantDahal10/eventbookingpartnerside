@@ -295,10 +295,24 @@ const MyEvents = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Revenue */}
+                                            {/* Revenue Breakdown */}
                                             <div className="col-span-1 border-l border-slate-100 pl-6">
-                                                <p className="text-xs font-bold uppercase text-slate-400 mb-1">Gross Revenue</p>
-                                                <p className="text-xl font-black text-slate-900">{event.revenue}</p>
+                                                <div className="flex flex-col gap-1">
+                                                    <div>
+                                                        <p className="text-[10px] font-bold uppercase text-slate-400">Net Revenue (95%)</p>
+                                                        <p className="text-xl font-black text-slate-900 leading-tight">{event.revenue}</p>
+                                                    </div>
+                                                    <div className="flex gap-3 mt-1">
+                                                        <div className="text-xs">
+                                                            <span className="text-slate-400 font-medium">Gross: </span>
+                                                            <span className="font-bold text-slate-700">{event.gross || '-'}</span>
+                                                        </div>
+                                                        <div className="text-xs">
+                                                            <span className="text-slate-400 font-medium">Fee: </span>
+                                                            <span className="font-bold text-red-500">{event.commission || '-'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             {/* Views/Traffic */}
