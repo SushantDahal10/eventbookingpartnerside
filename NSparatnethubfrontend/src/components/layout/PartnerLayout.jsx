@@ -20,7 +20,9 @@ const PartnerLayout = () => {
         { label: 'My Events', path: '/partner/events', icon: '📅' },
         { label: 'Create Event', path: '/partner/create', icon: '➕' },
         { label: 'Earnings', path: '/partner/earnings', icon: '💰' },
-        { label: 'Marketing', path: '/partner/marketing', icon: '🚀' },
+        { label: 'Trending', path: '/partner/trending', icon: '🔥' },
+        { label: 'Settings', path: '/partner/settings', icon: '⚙️' },
+        // { label: 'Marketing', path: '/partner/marketing', icon: '🚀' },
     ];
 
     return (
@@ -77,13 +79,6 @@ const PartnerLayout = () => {
                         >
                             <span>💬</span> Help Center
                         </Link>
-                        <Link
-                            to="/partner/settings"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive('/partner/settings') ? 'bg-gray-800 text-white' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            <span>⚙️</span> Settings
-                        </Link>
                     </div>
                 </div>
 
@@ -102,13 +97,13 @@ const PartnerLayout = () => {
                         </Link>
                     </div>
                 </div>
-            </aside>
+            </aside >
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-h-screen w-full">
+            < div className="flex-1 flex flex-col min-h-screen w-full" >
 
                 {/* Top Header */}
-                <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
+                < header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20" >
                     <div className="flex items-center gap-3">
                         {/* Hamburger Button */}
                         <button
@@ -131,14 +126,14 @@ const PartnerLayout = () => {
                             🔔
                         </button>
                     </div>
-                </header>
+                </header >
 
                 {/* Page Content */}
-                <div className="p-4 md:p-6 lg:p-10 max-w-7xl w-full mx-auto">
+                < div className="p-4 md:p-6 lg:p-10 max-w-7xl w-full mx-auto" >
                     <Outlet />
-                </div>
-            </div>
-        </div>
+                </div >
+            </div >
+        </div >
     );
 };
 

@@ -157,4 +157,64 @@ const sendPasswordResetEmail = async (email, otp) => {
     });
 };
 
-module.exports = { sendPasswordSetupLinkEmail, sendPasswordResetEmail };
+const sendWithdrawalOtpEmail = async (email, otp, amount) => {
+    const html = `
+        <div style="${styles}">
+            <div style="${containerStyle}">
+                <div style="${headerStyle}">
+                    <h1 style="margin:0; font-size: 24px;">Confirm Withdrawal</h1>
+                </div>
+                <div style="${bodyStyle}">
+                    <p>Hello,</p>
+                    <p>You requested a withdrawal of <strong>Rs. ${amount}</strong> from your NS Partner Hub account.</p>
+                    <p>Please use the verification code below to confirm this transaction. This code expires in 10 minutes.</p>
+                    
+                    <div style="${codeBoxStyle}">
+                        <span style="${codeStyle}">${otp}</span>
+                    </div>
+
+                    <p style="font-size: 14px; color: #64748b;">If you did not request this, please change your password immediately.</p>
+                </div>
+                <div style="${footerStyle}">
+                    &copy; 2026 NepaliShows Inc. All rights reserved.
+                </div>
+            </div>
+        </div>
+    `;
+
+    await sendEmail(email, 'Withdrawal Verification Code', html, () => {
+        console.log(`💸  Withdrawal OTP: ${otp}`);
+    });
+};
+
+const sendProfileUpdateOtpEmail = async (email, otp) => {
+    const html = `
+        <div style="${styles}">
+            <div style="${containerStyle}">
+                <div style="${headerStyle}">
+                    <h1 style="margin:0; font-size: 24px;">Confirm Profile Update</h1>
+                </div>
+                <div style="${bodyStyle}">
+                    <p>Hello,</p>
+                    <p>We received a request to update sensitive information (Phone/Email) on your NS Partner Hub profile.</p>
+                    <p>Please use the verification code below to confirm this change. This code expires in 10 minutes.</p>
+                    
+                    <div style="${codeBoxStyle}">
+                        <span style="${codeStyle}">${otp}</span>
+                    </div>
+
+                    <p style="font-size: 14px; color: #64748b;">If you did not request this, please change your password immediately.</p>
+                </div>
+                <div style="${footerStyle}">
+                    &copy; 2026 NepaliShows Inc. All rights reserved.
+                </div>
+            </div>
+        </div>
+    `;
+
+    await sendEmail(email, 'Profile Update Verification Code', html, () => {
+        console.log(`🛡️  Profile OTP: ${otp}`);
+    });
+};
+
+module.exports = { sendPasswordSetupLinkEmail, sendPasswordResetEmail, sendWithdrawalOtpEmail, sendProfileUpdateOtpEmail };

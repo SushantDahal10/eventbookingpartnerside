@@ -21,6 +21,7 @@ const eventRoutes = require('./routes/eventRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/partners', require('./routes/partnerRoutes'));
 
 // Global Error Handler
 app.use((err, req, res, next) => {
@@ -37,6 +38,20 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
+const startEventScheduler = require('./cron/eventScheduler');
+startEventScheduler();
+
+const server = app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+});
+
+server.on('error', (e) => console.error('Server Error:', e));
+
+process.on('exit', (code) => {
+    console.log(`Process exiting with code: ${code}`);
+});
+
+process.on('SIGINT', () => {
+    console.log('Received SIGINT. Shutting down.');
+    process.exit();
 });

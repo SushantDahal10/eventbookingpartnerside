@@ -21,7 +21,7 @@ const PaymentGateway = () => {
         setTimeout(() => {
             setProcessing(false);
             alert(`Payment Successful via ${selectedMethod.toUpperCase()}!\nTransaction ID: TXN-${Math.floor(Math.random() * 1000000)}`);
-            navigate('/partner/marketing');
+            navigate('/partner/dashboard'); // Redirect to dashboard since marketing is disabled
         }, 2000);
     };
 

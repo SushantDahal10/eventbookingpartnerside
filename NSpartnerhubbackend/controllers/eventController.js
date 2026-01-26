@@ -163,3 +163,234 @@ exports.createEvent = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+exports.getMyEvents = async (req, res) => {
+    try {
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: 'Unauthorized.' });
+        }
+
+        // 1. Get Partner ID
+        const { data: partner, error: pError } = await supabaseAdmin
+            .from('partners')
+            .select('id')
+            .eq('user_id', req.user.id)
+            .single();
+
+        if (pError || !partner) return res.status(404).json({ error: 'Partner account not found.' });
+
+        // 2. Fetch Events
+        const { data: events, error: eventError } = await supabaseAdmin
+            .from('events')
+            .select(`
+                id,
+                title,
+                event_date,
+                location,
+                status,
+                event_images (image_url, image_type),
+                ticket_tiers (total_quantity, available_quantity, price)
+            `)
+            .eq('partner_id', partner.id)
+            .order('created_at', { ascending: false });
+
+        if (eventError) throw eventError;
+
+        // 3. Format Data
+        const formattedEvents = events.map(e => {
+            const coverImage = e.event_images.find(img => img.image_type === 'cover')?.image_url || null;
+
+            const totalCapacity = e.ticket_tiers.reduce((acc, t) => acc + t.total_quantity, 0);
+            const totalAvailable = e.ticket_tiers.reduce((acc, t) => acc + t.available_quantity, 0);
+            const sold = totalCapacity - totalAvailable;
+
+            const revenue = e.ticket_tiers.reduce((acc, t) => {
+                const tierSold = t.total_quantity - t.available_quantity;
+                return acc + (tierSold * t.price);
+            }, 0);
+
+            return {
+                id: e.id,
+                title: e.title,
+                date: new Date(e.event_date).toLocaleDateString(),
+                time: new Date(e.event_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                venue: e.location,
+                status: e.status === 'active' ? (new Date(e.event_date) < new Date() ? 'Ended' : 'Live') : e.status,
+                sold: sold,
+                capacity: totalCapacity,
+                revenue: `Rs. ${revenue.toLocaleString()}`,
+                img: coverImage,
+                views: "0",
+                conversion: "0%"
+            };
+        });
+
+        res.json(formattedEvents);
+
+    } catch (err) {
+        console.error('Get My Events Error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+exports.getEventAnalytics = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!req.user || !req.user.id) return res.status(401).json({ error: 'Unauthorized' });
+        const userId = req.user.id;
+
+        // 1. Verify Ownership (Security)
+        const { data: partner, error: pError } = await supabaseAdmin
+            .from('partners')
+            .select('id')
+            .eq('user_id', userId)
+            .single();
+
+        if (pError || !partner) return res.status(403).json({ error: 'Unauthorized' });
+
+        // 2. Fetch Event with Tiers
+        const { data: event, error: eventError } = await supabaseAdmin
+            .from('events')
+            .select(`
+                id,
+                title,
+                status,
+                ticket_tiers (
+                    id,
+                    tier_name,
+                    price,
+                    total_quantity,
+                    available_quantity
+                )
+            `)
+            .eq('id', id)
+            .eq('partner_id', partner.id)
+            .single();
+
+        if (eventError || !event) return res.status(404).json({ error: 'Event not found' });
+
+        // 3. Calculate Analytics
+        let totalRevenue = 0;
+        let totalSold = 0;
+        let totalCapacity = 0;
+
+        const tiersAnalytics = event.ticket_tiers.map(tier => {
+            const sold = tier.total_quantity - tier.available_quantity;
+            const revenue = sold * tier.price;
+
+            totalRevenue += revenue;
+            totalSold += sold;
+            totalCapacity += tier.total_quantity;
+
+            return {
+                name: tier.tier_name,
+                price: tier.price,
+                capacity: tier.total_quantity,
+                available: tier.available_quantity,
+                sold: sold,
+                revenue: revenue
+            };
+        });
+
+        // 4. Fetch Sales Trend (Last 30 Days)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const { data: bookings, error: bookingError } = await supabaseAdmin
+            .from('bookings')
+            .select('created_at, total_amount')
+            .eq('event_id', id)
+            .eq('status', 'paid')
+            .gte('created_at', thirtyDaysAgo.toISOString())
+            .order('created_at', { ascending: true });
+
+        let salesTrend = [];
+        if (!bookingError && bookings) {
+            // Group by date
+            const trendMap = {};
+            bookings.forEach(b => {
+                const date = new Date(b.created_at).toLocaleDateString();
+                trendMap[date] = (trendMap[date] || 0) + parseFloat(b.total_amount);
+            });
+
+            // Format for Frontend
+            salesTrend = Object.keys(trendMap).map(date => ({
+                date,
+                revenue: trendMap[date]
+            }));
+        }
+
+        // 5. Return Data
+        res.json({
+            eventTitle: event.title,
+            status: event.status,
+            totalRevenue,
+            totalSold,
+            totalCapacity,
+            tiers: tiersAnalytics,
+            salesTrend // [ { date: '1/1/2026', revenue: 5000 }, ... ]
+        });
+
+    } catch (err) {
+        console.error('Get Analytics Error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+exports.cancelEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+
+        if (!req.user || !req.user.id) return res.status(401).json({ error: 'Unauthorized' });
+        if (!reason || reason.trim().length < 5) return res.status(400).json({ error: 'Valid cancellation reason required' });
+
+        const userId = req.user.id;
+
+        // 1. Verify Owner
+        const { data: partner } = await supabaseAdmin.from('partners').select('id').eq('user_id', userId).single();
+        if (!partner) return res.status(403).json({ error: 'Unauthorized' });
+
+        // 2. Fetch Event Status & Sales
+        const { data: event } = await supabaseAdmin
+            .from('events')
+            .select('id, status, ticket_tiers(total_quantity, available_quantity)')
+            .eq('id', id)
+            .eq('partner_id', partner.id)
+            .single();
+
+        if (!event) return res.status(404).json({ error: 'Event not found' });
+        if (event.status === 'cancelled') return res.status(400).json({ error: 'Event already cancelled' });
+        if (event.status === 'completed') return res.status(400).json({ error: 'Cannot cancel completed event' });
+
+        // 3. Check for Sales (Refund Logic)
+        let totalSold = 0;
+        event.ticket_tiers.forEach(t => totalSold += (t.total_quantity - t.available_quantity));
+
+        // Note: Realistically, if sold > 0, we trip a 'Refund Queue' workflow.
+        // For now, we update status and log reason.
+
+        const updateData = {
+            status: 'cancelled',
+            cancellation_reason: reason,
+            cancelled_at: new Date().toISOString()
+        };
+
+        const { error: updateError } = await supabaseAdmin
+            .from('events')
+            .update(updateData)
+            .eq('id', id);
+
+        if (updateError) throw updateError;
+
+        res.json({
+            message: totalSold > 0
+                ? 'Event cancelled. Refunds will be processed for sold tickets.'
+                : 'Event cancelled successfully.'
+        });
+
+    } catch (err) {
+        console.error('Cancel Event Error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};

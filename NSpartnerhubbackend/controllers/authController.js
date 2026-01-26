@@ -4,7 +4,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+
 
 // Helper to upload file to Supabase Storage
 const uploadFile = async (file, folderPath, bucket = 'Images_Personal_detail', customFilenameBase = null) => {
@@ -594,6 +594,7 @@ exports.loginPartner = async (req, res) => {
         }
 
         // 4. Generate JWT
+        const { JWT_SECRET } = require('../utils/config');
         const token = jwt.sign(
             { id: user.id, email: user.email, role: 'partner' },
             JWT_SECRET,

@@ -18,4 +18,10 @@ const uploadFields = upload.fields([
 // POST /api/events/create
 router.post('/create', requireAuth, uploadFields, eventController.createEvent);
 
+// GET /api/events/my-events
+router.get('/my-events', requireAuth, eventController.getMyEvents);
+
+// GET /api/events/:id/analytics
+router.get('/:id/analytics', requireAuth, eventController.getEventAnalytics);
+
 module.exports = router;

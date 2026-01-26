@@ -14,7 +14,8 @@ import PartnerSettings from './pages/partner/PartnerSettings';
 import HelpCenter from './pages/partner/HelpCenter';
 import WebScanner from './pages/partner/tools/WebScanner';
 import PartnerChat from './pages/partner/PartnerChat';
-import MarketingCenter from './pages/partner/MarketingCenter';
+import TrendingNow from './pages/partner/TrendingNow';
+// import MarketingCenter from './pages/partner/MarketingCenter';
 import PartnerTicket from './pages/partner/PartnerTicket';
 import ForgotPassword from './pages/partner/ForgotPassword';
 import ChangePassword from './pages/partner/ChangePassword';
@@ -48,7 +49,8 @@ function App() {
           <Route path="/partner/edit/:id" element={<CreateEvent />} />
           <Route path="/partner/create" element={<CreateEvent />} />
           <Route path="/partner/earnings" element={<Earnings />} />
-          <Route path="/partner/marketing" element={<MarketingCenter />} />
+          <Route path="/partner/trending" element={<TrendingNow />} />
+          {/* <Route path="/partner/marketing" element={<MarketingCenter />} /> */}
           <Route path="/partner/settings" element={<PartnerSettings />} />
         </Route>
       </Routes>
