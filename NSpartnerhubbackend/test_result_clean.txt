@@ -1,0 +1,7 @@
+Starting Rejected Payout Flow Test...
+Testing with Partner: 184445e4-ca6d-4d1a-ac53-0bea8e1f15e9, Event: Kathmandu EDM Night
+Initial Locked Funds: 0
+After Pending Request (500): Locked Funds = 500
+ [PASS] Funds locked
+After Rejecting: Locked Funds = 0
+ [PASS] Funds released correctly (Rejected ignored)

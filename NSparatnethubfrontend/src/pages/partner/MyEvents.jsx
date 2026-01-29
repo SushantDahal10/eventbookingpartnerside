@@ -18,7 +18,7 @@ const MyEvents = () => {
 
     const fetchEvents = async () => {
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('partner_token');
             const response = await fetch('http://localhost:5000/api/events/my-events', {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -47,7 +47,7 @@ const MyEvents = () => {
 
         setIsCancelling(true);
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('partner_token');
             const response = await fetch(`http://localhost:5000/api/events/${selectedEventId}/cancel`, {
                 method: 'POST',
                 headers: {

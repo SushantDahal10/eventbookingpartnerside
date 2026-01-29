@@ -33,7 +33,7 @@ const Earnings = () => {
 
     const fetchHistory = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('partner_token');
             const { eventId, startDate, endDate } = historyFilters;
             const params = new URLSearchParams();
             if (eventId && eventId !== 'all') params.append('event_id', eventId);
@@ -164,7 +164,7 @@ const Earnings = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('partner_token');
                 if (!token) return;
 
                 // 1. Fetch Earnings (Event Breakdown)
@@ -205,7 +205,7 @@ const Earnings = () => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('partner_token');
             const res = await fetch('http://localhost:5000/api/partners/payouts/initiate', {
                 method: 'POST',
                 headers: {
@@ -237,7 +237,7 @@ const Earnings = () => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('partner_token');
             const res = await fetch('http://localhost:5000/api/partners/payouts/confirm', {
                 method: 'POST',
                 headers: {
@@ -260,9 +260,11 @@ const Earnings = () => {
         }
     };
 
+
     // Helper: Get max withdrawable for selected event
     const getSelectedEventBalance = () => {
-        const ev = stats.events.find(e => e.eventId === withdrawalData.eventId);
+        // Fix: String comparison for safety
+        const ev = stats.events.find(e => String(e.eventId) === String(withdrawalData.eventId));
         return ev ? ev.balance : 0;
     };
 
@@ -274,7 +276,7 @@ const Earnings = () => {
         }).format(amount || 0);
     };
 
-    // Auto-fill bank details
+    // Auto-fill bank details, ensuring defaults
     useEffect(() => {
         if (showWithdrawModal && stats.bankDetails) {
             setWithdrawalData(prev => ({
@@ -356,6 +358,7 @@ const Earnings = () => {
                         <thead className="bg-slate-50 text-slate-500 font-bold uppercase">
                             <tr>
                                 <th className="px-6 py-4">Event Name</th>
+                                <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4 text-right">Gross Sales</th>
                                 <th className="px-6 py-4 text-right">Partner Fees (5%)</th>
                                 <th className="px-6 py-4 text-right">Net Revenue</th>
@@ -367,6 +370,14 @@ const Earnings = () => {
                             {stats.events.map(ev => (
                                 <tr key={ev.eventId}>
                                     <td className="px-6 py-4 font-bold text-slate-900">{ev.title}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${ev.status?.toLowerCase() === 'completed' || ev.status?.toLowerCase() === 'ended'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-blue-100 text-blue-700'
+                                            }`}>
+                                            {ev.status}
+                                        </span>
+                                    </td>
                                     <td className="px-6 py-4 text-right font-medium text-slate-500">
                                         {formatCurrency(ev.gross || 0)}
                                     </td>
@@ -561,10 +572,24 @@ const Earnings = () => {
                                                 <div className="flex justify-between mb-1">
                                                     <span className="text-slate-500">Total Revenue:</span>
                                                     <span className="font-bold text-slate-700">
-                                                        {formatCurrency(stats.events.find(e => e.eventId === withdrawalData.eventId)?.revenue || 0)}
+                                                        {formatCurrency(stats.events.find(e => String(e.eventId) === String(withdrawalData.eventId))?.revenue || 0)}
                                                     </span>
                                                 </div>
-                                                <div className="flex justify-between">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-slate-500">Status:</span>
+                                                    {(() => {
+                                                        const ev = stats.events.find(e => String(e.eventId) === String(withdrawalData.eventId));
+                                                        return (
+                                                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${ev?.status?.toLowerCase() === 'completed' || ev?.status?.toLowerCase() === 'ended'
+                                                                    ? 'bg-green-100 text-green-700'
+                                                                    : 'bg-blue-100 text-blue-700'
+                                                                }`}>
+                                                                {ev?.status || '-'}
+                                                            </span>
+                                                        );
+                                                    })()}
+                                                </div>
+                                                <div className="flex justify-between mt-1">
                                                     <span className="text-slate-500">Available to Withdraw:</span>
                                                     <span className="font-bold text-green-600">
                                                         {formatCurrency(getSelectedEventBalance())}

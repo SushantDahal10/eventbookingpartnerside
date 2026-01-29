@@ -10,7 +10,7 @@ const PartnerDashboard = () => {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = localStorage.getItem('partner_token');
                 if (!token) {
                     window.location.href = '/partner/login';
                     return;
@@ -25,7 +25,7 @@ const PartnerDashboard = () => {
                 if (response.status === 401) {
                     const errData = await response.json();
                     console.error('Dashboard 401 Error:', errData);
-                    localStorage.removeItem('token');
+                    localStorage.removeItem('partner_token');
                     window.location.href = '/partner/login';
                     return;
                 }

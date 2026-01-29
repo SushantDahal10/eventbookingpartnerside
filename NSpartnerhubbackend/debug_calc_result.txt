@@ -1,0 +1,40 @@
+
+[CALCULATION] Partner: 184445e4-ca6d-4d1a-ac53-0bea8e1f15e9
+ EVENT: Kathmandu EDM Night (Status: active, ID: 9d06a72e-8c8c-4d2b-b1ff-5873174329c8)
+   Revenue: 33416.25
+   Pending: 0
+   Withdrawn: 0
+   CALC BALANCE: 33416.25
+-----------------------
+ EVENT: Tech Startup Pitch Day (Status: active, ID: a002b602-bff2-4d15-b91b-fb9ba718e48f)
+   Revenue: 3990
+   Pending: 0
+   Withdrawn: 0
+   CALC BALANCE: 3990
+-----------------------
+ EVENT: Pokhara Open Air Food Fest (Status: active, ID: 07fa6527-0ec9-42d1-9326-6e3a73d68f4b)
+   Revenue: 1995
+   Pending: 0
+   Withdrawn: 0
+   CALC BALANCE: 1995
+-----------------------
+ EVENT: Art & Photography Exhibition (Status: active, ID: c27bfeda-639e-4e94-b6bc-3f8480a2751c)
+   Revenue: 1995
+   Pending: 0
+   Withdrawn: 0
+   CALC BALANCE: 1995
+-----------------------
+
+[CALCULATION] Partner: eb540d8e-9636-4ce7-bba7-ff5452e93b02
+ EVENT: Futsal League (Status: active, ID: 3512640b-77a3-4ecc-82ad-fd516785060e)
+   Revenue: 8360
+   Pending: 0
+   Withdrawn: 8360
+   CALC BALANCE: 0
+-----------------------
+ EVENT: Stand-up Comedy Night (Status: active, ID: 373af5a0-299f-4501-beff-6a1b25a62b51)
+   Revenue: 2593.5
+   Pending: 0
+   Withdrawn: 0
+   CALC BALANCE: 2593.5
+-----------------------

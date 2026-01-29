@@ -154,7 +154,7 @@ const CreateEvent = () => {
         }
 
         try {
-            const token = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('partner_token');
             if (!token) {
                 alert("You are not logged in. Please log in again.");
                 navigate('/partner/login');
