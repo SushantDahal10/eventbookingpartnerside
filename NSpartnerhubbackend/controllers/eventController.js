@@ -189,6 +189,7 @@ exports.getMyEvents = async (req, res) => {
                 location,
                 status,
                 event_images (image_url, image_type),
+                gate_staff_requests (requested_count, approved_count, status),
                 ticket_tiers (total_quantity, available_quantity, price)
             `)
             .eq('partner_id', partner.id)
@@ -230,7 +231,14 @@ exports.getMyEvents = async (req, res) => {
                 commission: `Rs. ${commission.toLocaleString()}`,
                 img: coverImage,
                 views: "0",
-                conversion: "0%"
+                img: coverImage,
+                views: "0",
+                conversion: "0%",
+                conversion: "0%",
+                conversion: "0%",
+                gate_staff_requested_count: (e.gate_staff_requests && e.gate_staff_requests.length > 0) ? e.gate_staff_requests[0].requested_count : 0,
+                gate_staff_approved_count: (e.gate_staff_requests && e.gate_staff_requests.length > 0) ? e.gate_staff_requests[0].approved_count : 0,
+                gate_staff_request_status: (e.gate_staff_requests && e.gate_staff_requests.length > 0) ? e.gate_staff_requests[0].status : 'none'
             };
         });
 

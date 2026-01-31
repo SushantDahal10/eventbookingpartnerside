@@ -675,3 +675,93 @@ CREATE POLICY "Admins can view all audit logs" ON audit_logs
 
 CREATE POLICY "Partners can view their own withdrawal logs" ON withdrawal_logs
     FOR SELECT USING (auth.uid() = (SELECT user_id FROM partners WHERE id = withdrawal_logs.partner_id));
+
+
+---gate
+
+-- Run this in Supabase SQL Editor
+
+-- 1. Create Gate Staff Table
+CREATE TABLE IF NOT EXISTS public.gate_staff (
+  id uuid not null default gen_random_uuid (),
+  full_name text not null,
+  email text not null,
+  password_hash text not null,
+  active boolean null default true,
+  partner_id uuid REFERENCES public.partners(id) ON DELETE CASCADE,
+  event_id uuid REFERENCES public.events(id) ON DELETE CASCADE,
+  created_at timestamp with time zone not null default now(),
+  constraint gate_staff_pkey primary key (id),
+  constraint gate_staff_email_key unique (email),
+  constraint gate_staff_email_check check ((email = lower(email)))
+);
+
+-- 2. Create User Roles Table
+CREATE TABLE IF NOT EXISTS public.user_roles (
+  id uuid not null default uuid_generate_v4 (),
+  user_id uuid not null,
+  role text null default 'user'::text,
+  created_at timestamp with time zone not null default timezone ('utc'::text, now()),
+  constraint user_roles_pkey primary key (id),
+  constraint user_roles_user_id_key unique (user_id),
+  constraint fk_user_roles_gate_staff foreign KEY (user_id) references gate_staff (id) on delete CASCADE,
+  constraint user_roles_role_check check (
+    (
+      role = any (array['admin'::text, 'staff'::text, 'user'::text])
+    )
+  )
+);
+
+-- 3. Update Events Table for Staff Requests
+ALTER TABLE public.events
+ADD COLUMN IF NOT EXISTS gate_staff_requested_count INTEGER DEFAULT 0 CHECK (gate_staff_requested_count >= 0),
+ADD COLUMN IF NOT EXISTS gate_staff_request_status TEXT DEFAULT 'none' CHECK (gate_staff_request_status IN ('none', 'pending', 'approved', 'rejected'));
+
+
+-- Run this in Supabase SQL Editor
+
+-- 1. Create Gate Staff Requests Table
+CREATE TABLE IF NOT EXISTS public.gate_staff_requests (
+  id uuid not null default gen_random_uuid (),
+  event_id uuid not null REFERENCES public.events(id) ON DELETE CASCADE,
+  partner_id uuid not null REFERENCES public.partners(id) ON DELETE CASCADE,
+  requested_count integer not null default 0 CHECK (requested_count >= 0),
+  approved_count integer not null default 0 CHECK (approved_count >= 0),
+  status text not null default 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  constraint gate_staff_requests_pkey primary key (id),
+  constraint gate_staff_requests_event_unique unique (event_id)
+);
+
+-- 2. Trigger for Updated At
+CREATE OR REPLACE FUNCTION update_gate_staff_requests_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_gate_staff_requests_updated_at
+BEFORE UPDATE ON public.gate_staff_requests
+FOR EACH ROW
+EXECUTE FUNCTION update_gate_staff_requests_updated_at();
+
+-- 3. Cleanup Old Columns from Events (Optional, can leave them for safety for now)
+-- ALTER TABLE public.events DROP COLUMN IF EXISTS gate_staff_requested_count;
+-- ALTER TABLE public.events DROP COLUMN IF EXISTS gate_staff_request_status;
+ALTER TABLE public.gate_staff 
+ADD COLUMN IF NOT EXISTS event_id UUID REFERENCES public.events(id) ON DELETE CASCADE;
+
+
+-- 1. Add partner_id
+ALTER TABLE public.gate_staff 
+ADD COLUMN IF NOT EXISTS partner_id UUID REFERENCES public.partners(id) ON DELETE CASCADE;
+
+-- 2. Add event_id
+ALTER TABLE public.gate_staff 
+ADD COLUMN IF NOT EXISTS event_id UUID REFERENCES public.events(id) ON DELETE CASCADE;
+
+-- 3. Reload Schema (CRITICAL)
+NOTIFY pgrst, 'reload schema';

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import GateStaffRequest from '../../components/partner/GateStaffRequest';
 
 const MyEvents = () => {
     const [events, setEvents] = useState([]);
@@ -11,6 +12,10 @@ const MyEvents = () => {
     const [selectedEventId, setSelectedEventId] = useState(null);
     const [cancelReason, setCancelReason] = useState('');
     const [isCancelling, setIsCancelling] = useState(false);
+
+    // Gate Staff Modal State
+    const [showGateStaffModal, setShowGateStaffModal] = useState(false);
+    const [selectedEventForStaff, setSelectedEventForStaff] = useState(null);
 
     useEffect(() => {
         fetchEvents();
@@ -40,6 +45,13 @@ const MyEvents = () => {
         e.stopPropagation();
         setSelectedEventId(id);
         setShowCancelModal(true);
+    };
+
+    const openGateStaffModal = (e, event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedEventForStaff(event);
+        setShowGateStaffModal(true);
     };
 
     const handleCancelEvent = async () => {
@@ -345,6 +357,18 @@ const MyEvents = () => {
                                                     <span className="hidden xl:inline">Cancel</span>
                                                 </button>
                                             )}
+
+                                            {/* Gate Staff Button */}
+                                            {config.status !== 'Ended' && config.status !== 'completed' && config.status !== 'cancelled' && (
+                                                <button
+                                                    onClick={(e) => openGateStaffModal(e, event)}
+                                                    className="h-12 px-4 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold flex items-center gap-2 transition-colors ml-2"
+                                                    title="Request Gate Staff"
+                                                >
+                                                    <span className="text-xl">👮</span>
+                                                    <span className="hidden xl:inline">Staff</span>
+                                                </button>
+                                            )}
                                         </div>
 
                                     </div>
@@ -413,6 +437,14 @@ const MyEvents = () => {
                     </div>
                 )
             }
+
+            {/* Gate Staff Request Modal */}
+            <GateStaffRequest
+                isOpen={showGateStaffModal}
+                onClose={() => setShowGateStaffModal(false)}
+                event={selectedEventForStaff}
+                onUpdate={fetchEvents}
+            />
         </div >
     );
 };

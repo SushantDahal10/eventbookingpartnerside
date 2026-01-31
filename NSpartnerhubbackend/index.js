@@ -22,6 +22,7 @@ const eventRoutes = require('./routes/eventRoutes');
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/partners', require('./routes/partnerRoutes'));
+app.use('/api/gate-staff', require('./routes/gateStaffRoutes'));
 
 // Global Error Handler
 app.use((err, req, res, next) => {
